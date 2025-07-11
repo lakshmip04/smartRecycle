@@ -14,7 +14,7 @@ import ProfileScreen from './screens/ProfileScreen';
 // Admin Dashboard
 import AdminDashboard from './pages/AdminDashboard';
 
-// User Dashboard
+// User Dashboard (placeholder)
 import UserDashboard from './pages/UserDashboard';
 
 // Create Material-UI theme with eco-friendly colors

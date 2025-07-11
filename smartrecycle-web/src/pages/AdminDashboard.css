@@ -1,0 +1,68 @@
+.stat-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.admin-header {
+  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  color: white;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.admin-tab-panel {
+  padding: 2rem 0;
+}
+
+.pending-approval-card {
+  margin-bottom: 1rem;
+  border-left: 4px solid #FF9800;
+}
+
+.approved-card {
+  margin-bottom: 1rem;
+  border-left: 4px solid #4CAF50;
+}
+
+.rejected-card {
+  margin-bottom: 1rem;
+  border-left: 4px solid #F44336;
+}
+
+.action-button {
+  margin: 0 0.25rem;
+}
+
+.ai-stat-chart {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.classification-progress {
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 1rem 0;
+    text-align: center;
+  }
+  
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+  
+  .action-button {
+    margin: 0.25rem 0;
+    width: 100%;
+  }
+} 
