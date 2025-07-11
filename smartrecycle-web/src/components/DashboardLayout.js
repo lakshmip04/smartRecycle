@@ -1,104 +1,198 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
+  IconButton,
   Typography,
-  Container,
-  Paper,
-  BottomNavigation,
-  BottomNavigationAction,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemButton,
+  Avatar,
   Box,
+  Divider,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
+  Menu as MenuIcon,
   Recycling,
   LocalShipping,
   Person,
+  Nature
 } from '@mui/icons-material';
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const getNavigationValue = () => {
-    if (location.pathname.includes('materials')) return 0;
-    if (location.pathname.includes('collections')) return 1;
-    if (location.pathname.includes('profile')) return 2;
-    return 0;
+  const navItems = [
+    { name: 'Materials', path: '/dashboard/materials', icon: <Recycling /> },
+    { name: 'Collections', path: '/dashboard/collections', icon: <LocalShipping /> },
+    { name: 'Profile', path: '/dashboard/profile', icon: <Person /> },
+  ];
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    setMobileOpen(false); // Close mobile drawer after navigation
   };
 
-  const handleNavigationChange = (event, newValue) => {
-    switch (newValue) {
-      case 0:
-        navigate('/dashboard/materials');
-        break;
-      case 1:
-        navigate('/dashboard/collections');
-        break;
-      case 2:
-        navigate('/dashboard/profile');
-        break;
-      default:
-        break;
-    }
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
+
+  const drawerWidth = 240;
+
+  const drawer = (
+    <Box>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Nature sx={{ color: 'primary.main' }} />
+        <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+          SmartRecycle
+        </Typography>
+      </Box>
+      <Divider />
+      <List>
+        {navItems.map((item) => (
+          <ListItem key={item.name} disablePadding>
+            <ListItemButton 
+              onClick={() => handleNavigation(item.path)}
+              selected={location.pathname.includes(item.path)}
+              sx={{
+                '&.Mui-selected': {
+                  backgroundColor: 'primary.light',
+                  color: 'primary.contrastText',
+                  '&:hover': {
+                    backgroundColor: 'primary.main',
+                  },
+                },
+              }}
+            >
+              <ListItemIcon 
+                sx={{ 
+                  color: location.pathname.includes(item.path) ? 'primary.contrastText' : 'inherit' 
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.name} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+      <Box sx={{ mt: 'auto', p: 2 }}>
+        <Divider sx={{ mb: 2 }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+            SR
+          </Avatar>
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+              Collector User
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              collector@example.com
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Top App Bar */}
-      <AppBar position="static" sx={{ backgroundColor: '#4CAF50' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* App Bar */}
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
+          bgcolor: 'primary.main',
+        }}
+      >
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             SmartRecycle Collector
           </Typography>
         </Toolbar>
       </AppBar>
 
-      {/* Main Content */}
-      <Container 
-        maxWidth="lg" 
-        sx={{ 
-          flex: 1, 
-          py: 2, 
-          display: 'flex', 
-          flexDirection: 'column',
-          minHeight: 'calc(100vh - 120px)' 
-        }}
+      {/* Navigation Drawer */}
+      <Box
+        component="nav"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
       >
-        <Outlet />
-      </Container>
-
-      {/* Bottom Navigation */}
-      <Paper 
-        sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} 
-        elevation={3}
-      >
-        <BottomNavigation
-          value={getNavigationValue()}
-          onChange={handleNavigationChange}
-          showLabels
+        {/* Mobile drawer */}
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile.
+          }}
           sx={{
-            '& .MuiBottomNavigationAction-root.Mui-selected': {
-              color: '#2E7D32',
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
             },
           }}
         >
-          <BottomNavigationAction
-            label="Materials"
-            icon={<Recycling />}
-          />
-          <BottomNavigationAction
-            label="Collections"
-            icon={<LocalShipping />}
-          />
-          <BottomNavigationAction
-            label="Profile"
-            icon={<Person />}
-          />
-        </BottomNavigation>
-      </Paper>
+          {drawer}
+        </Drawer>
+        {/* Desktop drawer */}
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', md: 'block' },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
+            },
+          }}
+          open
+        >
+          {drawer}
+        </Drawer>
+      </Box>
+
+      {/* Main content */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          bgcolor: 'background.default',
+          minHeight: '100vh'
+        }}
+      >
+        <Toolbar /> {/* This adds space for the fixed AppBar */}
+        <Outlet />
+      </Box>
     </Box>
   );
 };
 
-export default DashboardLayout; 
+export default DashboardLayout;

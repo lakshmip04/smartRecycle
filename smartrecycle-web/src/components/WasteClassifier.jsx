@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -16,6 +16,11 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   PhotoCamera,
@@ -25,6 +30,10 @@ import {
   CheckCircle,
   Cancel,
   Close,
+  Info,
+  Nature,
+  Warning,
+  Science,
 } from '@mui/icons-material';
 
 const WasteClassifier = ({ onClassificationComplete }) => {
@@ -36,22 +45,21 @@ const WasteClassifier = ({ onClassificationComplete }) => {
   const [open, setOpen] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
-  
+  const [resultKey, setResultKey] = useState(0); // Add a key to force re-render
+
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   // Google Gemini AI Configuration
-  const GEMINI_API_KEY = "AIzaSyC5Ob_itc0pBnopyBxUohxf58fg6muf8RE"; // Your API key
+  const GEMINI_API_KEY = "AIzaSyC5Ob_itc0pBnopyBxUohxf58fg6muf8RE";
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const classificationPrompt = `
 You are a waste classification assistant.
-
 Given an image of a waste item, classify it into:
 1. Biodegradable or Non-biodegradable
-2. One of: plastic, metal, paper, electronic, organic, glass, textile, hazardous
-
+2. One of: plastic, metal, human, medical, paper, electronic, organic, glass, textile, hazardous
 Return your answer in this JSON format:
 {
   "waste_type": "plastic",
@@ -62,6 +70,13 @@ Return your answer in this JSON format:
 }
 Only return the JSON.
 `;
+
+  // Add useEffect to log state changes
+  useEffect(() => {
+    console.log("Classification result updated:", classificationResult);
+    console.log("Classification result keys:", classificationResult ? Object.keys(classificationResult) : 'null');
+    console.log("Waste type:", classificationResult?.waste_type);
+  }, [classificationResult]);
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -74,18 +89,17 @@ Only return the JSON.
     try {
       const constraints = {
         video: {
-          facingMode: 'environment', // Use back camera on mobile
+          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
         }
       };
-      
+
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       setShowCamera(true);
       setError('');
-      
-      // Wait for video element to be available
+
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -111,15 +125,11 @@ Only return the JSON.
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
-      // Set canvas dimensions to match video
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      // Draw the video frame to canvas
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convert canvas to blob
+
       canvas.toBlob((blob) => {
         if (blob) {
           const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
@@ -136,17 +146,14 @@ Only return the JSON.
 
   const processImageFile = (file) => {
     setSelectedImage(file);
-    
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setImagePreview(e.target.result);
     };
     reader.readAsDataURL(file);
-    
-    // Reset previous results
     setClassificationResult(null);
     setError('');
+    setResultKey(prev => prev + 1); // Increment key to force re-render
   };
 
   const classifyWaste = async () => {
@@ -159,10 +166,8 @@ Only return the JSON.
     setError('');
 
     try {
-      // Convert image to base64
       const base64Image = await convertToBase64(selectedImage);
-      
-      // Prepare request for Google Gemini
+
       const requestBody = {
         contents: [
           {
@@ -173,7 +178,7 @@ Only return the JSON.
               {
                 inline_data: {
                   mime_type: selectedImage.type,
-                  data: base64Image.split(',')[1] // Remove data:image/jpeg;base64, prefix
+                  data: base64Image.split(',')[1]
                 }
               }
             ]
@@ -181,6 +186,7 @@ Only return the JSON.
         ]
       };
 
+      console.log("Sending request to API...");
       const response = await fetch(GEMINI_API_URL, {
         method: 'POST',
         headers: {
@@ -194,14 +200,31 @@ Only return the JSON.
       }
 
       const data = await response.json();
+      console.log("API response received:", data);
+
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        throw new Error('Invalid API response format');
+      }
+
       const resultText = data.candidates[0].content.parts[0].text;
-      
+      console.log("Result text:", resultText);
+
       // Parse JSON response
-      const cleanedText = resultText.replace(/```json|```/g, '').trim();
-      const result = JSON.parse(cleanedText);
-      
+      let result;
+      try {
+        const cleanedText = resultText.replace(/```json|```/g, '').trim();
+        result = JSON.parse(cleanedText);
+        console.log("Parsed result:", result);
+      } catch (parseError) {
+        console.error("Failed to parse API response:", parseError);
+        throw new Error('Failed to parse API response');
+      }
+
+      // Update state with the result
+      console.log("Result:", result);
       setClassificationResult(result);
-      
+      setResultKey(prev => prev + 1); // Increment key to force re-render
+
       // Callback to parent component
       if (onClassificationComplete) {
         onClassificationComplete({
@@ -209,10 +232,9 @@ Only return the JSON.
           classification: result
         });
       }
-
     } catch (error) {
       console.error('Classification error:', error);
-      setError('Failed to classify waste. Please try again.');
+      setError(`Failed to classify waste: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -245,6 +267,20 @@ Only return the JSON.
     return biodegradability === 'biodegradable' ? '#4caf50' : '#ff5722';
   };
 
+  const getWasteTypeIcon = (wasteType) => {
+    const icons = {
+      plastic: '🥤',
+      metal: '🔧',
+      paper: '📄',
+      electronic: '📱',
+      organic: '🍃',
+      glass: '🍾',
+      textile: '👕',
+      hazardous: '☢️'
+    };
+    return icons[wasteType] || '♻️';
+  };
+
   const resetClassifier = () => {
     setSelectedImage(null);
     setImagePreview(null);
@@ -252,7 +288,10 @@ Only return the JSON.
     setError('');
     stopCamera();
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setResultKey(prev => prev + 1); // Increment key to force re-render
   };
+
+
 
   return (
     <>
@@ -327,7 +366,6 @@ Only return the JSON.
                   ref={canvasRef}
                   style={{ display: 'none' }}
                 />
-                
                 <IconButton
                   onClick={stopCamera}
                   sx={{
@@ -345,7 +383,7 @@ Only return the JSON.
                   <Close />
                 </IconButton>
               </Paper>
-              
+
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
@@ -389,7 +427,7 @@ Only return the JSON.
                   }}
                 />
               </Paper>
-              
+
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
@@ -412,121 +450,363 @@ Only return the JSON.
               {error}
             </Alert>
           )}
+        </CardContent>
+      </Card>
 
-          {classificationResult && (
-            <Card variant="outlined" sx={{ mt: 3, bgcolor: 'background.paper' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
-                  Classification Result
-                </Typography>
-                
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Waste Type
+             {/* AI Waste Classifier Results Card - Always shown but with empty fields initially */}
+       <Card elevation={3} sx={{ mb: 3 }} key={resultKey}>
+         <CardContent>
+           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+             <Science sx={{ mr: 1, color: 'primary.main' }} />
+             Classification Results
+             {classificationResult && (
+               <Typography variant="caption" sx={{ ml: 2, bgcolor: 'success.light', px: 1, py: 0.5, borderRadius: 1 }}>
+                 Results Available
+               </Typography>
+             )}
+           </Typography>
+
+                     {/* Show analyzed image when results are available */}
+           {imagePreview && classificationResult && (
+             <Box sx={{ mb: 3, textAlign: 'center' }}>
+               <Typography variant="subtitle1" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                 📸 Analyzed Image
+               </Typography>
+               <Paper elevation={2} sx={{ p: 2, display: 'inline-block', borderRadius: 2 }}>
+                 <img
+                   src={imagePreview}
+                   alt="Analyzed waste"
+                   style={{
+                     maxWidth: '300px',
+                     maxHeight: '300px',
+                     width: '100%',
+                     height: 'auto',
+                     borderRadius: '8px'
+                   }}
+                 />
+               </Paper>
+             </Box>
+           )}
+
+           {/* Human Detection Warning - shown only when human is detected */}
+           {classificationResult?.waste_type === 'human' && (
+             <Alert 
+               severity="warning" 
+               sx={{ mb: 3, fontWeight: 'bold' }}
+               icon={<Warning fontSize="large" />}
+             >
+               <Typography variant="h6" gutterBottom>
+                 ⚠️ Human Detected in Image
+               </Typography>
+               <Typography variant="body1">
+                 Please upload images of waste materials only. The AI has detected a human in this image. 
+                 For proper waste classification, please capture or upload images containing only waste items 
+                 (plastic, metal, paper, electronics, etc.).
+               </Typography>
+             </Alert>
+           )}
+
+          {/* Classification Results Grid - shown always but with empty fields initially */}
+          <Box sx={{
+            bgcolor: '#f8f9fa',
+            border: '1px solid #dee2e6',
+            borderRadius: '8px',
+            p: 3,
+            mb: 2
+          }}>
+            <Grid container spacing={2}>
+              {/* Waste Type */}
+                              <Grid item xs={12} sm={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      Waste Type:
+                    </Typography>
+                    {classificationResult?.waste_type ? (
+                      <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
+                        "{classificationResult.waste_type}"
                       </Typography>
-                      <Chip
-                        label={classificationResult.waste_type?.toUpperCase()}
-                        sx={{ 
-                          bgcolor: getWasteTypeColor(classificationResult.waste_type),
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </Box>
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Biodegradability
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+                        Not classified yet
                       </Typography>
-                      <Chip
-                        label={classificationResult.biodegradability?.toUpperCase()}
-                        icon={classificationResult.biodegradability === 'biodegradable' ? <CheckCircle /> : <Cancel />}
-                        sx={{ 
-                          bgcolor: getBiodegradabilityColor(classificationResult.biodegradability),
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
-                    </Box>
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Confidence Level
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                        {classificationResult.confidence}%
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  
-                  {classificationResult.recycling_instructions && (
-                    <Grid item xs={12}>
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Recycling Instructions
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'info.main' }}>
-                          {classificationResult.recycling_instructions}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
-                  
-                  {classificationResult.environmental_impact && (
-                    <Grid item xs={12}>
-                      <Box>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Environmental Impact
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'warning.main' }}>
-                          {classificationResult.environmental_impact}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  )}
+                    )}
+                  </Box>
                 </Grid>
 
-                <Divider sx={{ my: 2 }} />
-                
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={() => setOpen(true)}
-                  sx={{ mr: 1 }}
+                {/* Biodegradability */}
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      Biodegradability:
+                    </Typography>
+                    {classificationResult?.biodegradability ? (
+                      <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
+                        "{classificationResult.biodegradability}"
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+                        Not analyzed yet
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+
+                {/* Confidence */}
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      Confidence:
+                    </Typography>
+                    {classificationResult?.confidence !== undefined ? (
+                      <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#0d6efd' }}>
+                        {classificationResult.confidence}%
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+                        Not analyzed yet
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+
+                {/* Environmental Impact */}
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      Environmental Impact:
+                    </Typography>
+                    {classificationResult?.environmental_impact ? (
+                      <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
+                        "{classificationResult.environmental_impact}"
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+                        Not analyzed yet
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+
+                {/* Recycling Instructions */}
+                <Grid item xs={12}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      Recycling Instructions:
+                    </Typography>
+                    {classificationResult?.recycling_instructions ? (
+                      <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
+                        "{classificationResult.recycling_instructions}"
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" sx={{ fontStyle: 'italic' }}>
+                        Not analyzed yet
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+            </Grid>
+          </Box>
+
+          {/* Enhanced Visual Results - shown only when there are results and not human */}
+          {classificationResult && classificationResult.waste_type !== 'human' && (
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    color: 'primary.main',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                 >
-                  View Details
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={resetClassifier}
-                >
-                  Classify Another
-                </Button>
-              </CardContent>
-            </Card>
+                  <Science sx={{ mr: 1, fontSize: 24 }} />
+                  Enhanced Classification Details
+                </Typography>
+              </Box>
+
+              {/* Main Results Grid */}
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                {/* Waste Type */}
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={1} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Waste Type
+                    </Typography>
+                    <Box sx={{ fontSize: '2rem', mb: 1 }}>
+                      {getWasteTypeIcon(classificationResult.waste_type)}
+                    </Box>
+                    <Chip
+                      label={classificationResult.waste_type?.toUpperCase()}
+                      sx={{
+                        bgcolor: getWasteTypeColor(classificationResult.waste_type),
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        py: 1,
+                        px: 2
+                      }}
+                    />
+                  </Paper>
+                </Grid>
+
+                {/* Biodegradability */}
+                <Grid item xs={12} md={6}>
+                  <Paper elevation={1} sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+                    <Typography variant="subtitle1" gutterBottom color="primary">
+                      Biodegradability
+                    </Typography>
+                    <Box sx={{ fontSize: '2rem', mb: 1 }}>
+                      {classificationResult.biodegradability === 'biodegradable' ? '🌱' : '🚫'}
+                    </Box>
+                    <Chip
+                      label={classificationResult.biodegradability?.toUpperCase()}
+                      icon={classificationResult.biodegradability === 'biodegradable' ? <CheckCircle /> : <Cancel />}
+                      sx={{
+                        bgcolor: getBiodegradabilityColor(classificationResult.biodegradability),
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        py: 1,
+                        px: 2
+                      }}
+                    />
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* Confidence Level */}
+              <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
+                <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Science sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
+                  AI Confidence Level
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main', mr: 1 }}>
+                    {classificationResult.confidence}%
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={classificationResult.confidence}
+                    sx={{
+                      flexGrow: 1,
+                      height: 8,
+                      borderRadius: 4,
+                      bgcolor: 'grey.200',
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: classificationResult.confidence >= 80 ? 'success.main' :
+                               classificationResult.confidence >= 60 ? 'warning.main' : 'error.main'
+                      }
+                    }}
+                  />
+                </Box>
+                <Typography variant="body2" color="textSecondary">
+                  {classificationResult.confidence >= 80 ? 'High confidence classification' :
+                   classificationResult.confidence >= 60 ? 'Medium confidence classification' :
+                   'Low confidence - manual verification recommended'}
+                </Typography>
+              </Paper>
+
+              {/* Detailed Information */}
+              <Grid container spacing={2}>
+                {/* Recycling Instructions */}
+                {classificationResult.recycling_instructions && (
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
+                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Recycling sx={{ mr: 1, color: 'info.main', fontSize: 20 }} />
+                        Recycling Instructions
+                      </Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <Info color="info" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={classificationResult.recycling_instructions}
+                            primaryTypographyProps={{ color: 'info.main', variant: 'body2' }}
+                          />
+                        </ListItem>
+                      </List>
+                    </Paper>
+                  </Grid>
+                )}
+
+                {/* Environmental Impact */}
+                {classificationResult.environmental_impact && (
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
+                      <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Nature sx={{ mr: 1, color: 'warning.main', fontSize: 20 }} />
+                        Environmental Impact
+                      </Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <Warning color="warning" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={classificationResult.environmental_impact}
+                            primaryTypographyProps={{ color: 'warning.main', variant: 'body2' }}
+                          />
+                        </ListItem>
+                      </List>
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+
+          {/* Action Buttons - shown only when there are results */}
+          {classificationResult && (
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Button
+                variant="outlined"
+                size="medium"
+                onClick={resetClassifier}
+                startIcon={<Recycling />}
+                sx={{ mr: 1 }}
+              >
+                Classify Another Item
+              </Button>
+              <Button
+                variant="outlined"
+                size="medium"
+                onClick={() => setOpen(true)}
+                startIcon={<Info />}
+                color="secondary"
+              >
+                View Raw JSON
+              </Button>
+            </Box>
           )}
         </CardContent>
       </Card>
 
       {/* Detailed Results Dialog */}
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Detailed Classification Results</DialogTitle>
-        <DialogContent>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Science sx={{ mr: 1 }} />
+            Technical Classification Data
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
           {classificationResult && (
             <Box>
-              <pre style={{ 
-                background: '#f5f5f5', 
-                padding: '16px', 
+              <Typography variant="h6" gutterBottom color="primary">
+                Raw API Response:
+              </Typography>
+              <pre style={{
+                background: '#f5f5f5',
+                padding: '16px',
                 borderRadius: '8px',
                 fontSize: '14px',
-                overflow: 'auto'
+                overflow: 'auto',
+                border: '1px solid #ddd'
               }}>
                 {JSON.stringify(classificationResult, null, 2)}
               </pre>
@@ -534,11 +814,13 @@ Only return the JSON.
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Close</Button>
+          <Button onClick={() => setOpen(false)} variant="contained">
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </>
   );
 };
 
-export default WasteClassifier; 
+export default WasteClassifier;
