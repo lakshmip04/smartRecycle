@@ -17,7 +17,7 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
-import { storeAuthData } from '../utils/auth';
+import authService from '../services/authService';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Login credentials for each role
+  // Login credentials for each role (demo mode)
   const roleCredentials = {
     user: {
       email: 'user@smartrecycle.com',
@@ -58,6 +58,33 @@ const LoginScreen = () => {
       return;
     }
 
+    setLoading(true);
+    
+    try {
+      // Use Oracle Cloud authentication service
+      const result = await authService.login(email, password, role);
+      
+      if (result.success) {
+        console.log('✅ Login successful, redirecting...');
+        
+        // Determine redirect path based on user role
+        const redirectPath = getRedirectPath(result.user.role);
+        navigate(redirectPath);
+      } else {
+        // If Oracle Cloud authentication fails, try demo mode
+        console.log('🔄 Oracle Cloud auth failed, trying demo mode...');
+        await handleDemoLogin(email, password, role);
+      }
+    } catch (error) {
+      console.error('❌ Authentication error:', error);
+      // Fallback to demo mode
+      await handleDemoLogin(email, password, role);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async (email, password, role) => {
     const credentials = roleCredentials[role];
     
     if (email !== credentials.email || password !== credentials.password) {
@@ -65,8 +92,7 @@ const LoginScreen = () => {
       return;
     }
 
-    setLoading(true);
-    
+    // Simulate Oracle Cloud login delay
     setTimeout(() => {
       const mockUser = {
         id: 1,
@@ -75,29 +101,67 @@ const LoginScreen = () => {
         role: role,
       };
       
-      storeAuthData('demo-token-123', mockUser.id, mockUser);
+      // Store auth data locally (demo mode)
+      localStorage.setItem('auth_token', 'demo-token-123');
+      localStorage.setItem('user_id', mockUser.id.toString());
+      localStorage.setItem('user_data', JSON.stringify(mockUser));
+      
+      console.log('✅ Demo login successful');
       navigate(credentials.redirect);
-      setLoading(false);
     }, 1000);
   };
 
-  const handleQuickLogin = (selectedRole) => {
+  const getRedirectPath = (userRole) => {
+    switch (userRole) {
+      case 'admin':
+        return '/admin-dashboard';
+      case 'user':
+        return '/user-dashboard';
+      case 'collector':
+        return '/dashboard';
+      default:
+        return '/dashboard';
+    }
+  };
+
+  const handleQuickLogin = async (selectedRole) => {
     const credentials = roleCredentials[selectedRole];
     setEmail(credentials.email);
     setPassword(credentials.password);
     setRole(selectedRole);
+    setLoading(true);
     
-    setTimeout(() => {
-      const mockUser = {
-        id: 1,
-        email: credentials.email,
-        name: credentials.name,
-        role: selectedRole,
-      };
+    try {
+      // Try Oracle Cloud authentication first
+      const result = await authService.login(credentials.email, credentials.password, selectedRole);
       
-      storeAuthData('demo-token-123', mockUser.id, mockUser);
-      navigate(credentials.redirect);
-    }, 500);
+      if (result.success) {
+        console.log('✅ Quick login via Oracle Cloud successful');
+        const redirectPath = getRedirectPath(result.user.role);
+        navigate(redirectPath);
+      } else {
+        throw new Error('Oracle Cloud auth failed');
+      }
+    } catch (error) {
+      console.log('🔄 Oracle Cloud quick login failed, using demo mode...');
+      
+      // Fallback to demo mode
+      setTimeout(() => {
+        const mockUser = {
+          id: 1,
+          email: credentials.email,
+          name: credentials.name,
+          role: selectedRole,
+        };
+        
+        localStorage.setItem('auth_token', 'demo-token-123');
+        localStorage.setItem('user_id', mockUser.id.toString());
+        localStorage.setItem('user_data', JSON.stringify(mockUser));
+        
+        navigate(credentials.redirect);
+        setLoading(false);
+      }, 500);
+    }
   };
 
   return (
@@ -138,9 +202,24 @@ const LoginScreen = () => {
           <Typography
             variant="body2"
             color="primary"
-            sx={{ fontStyle: 'italic', marginBottom: 4 }}
+            sx={{ fontStyle: 'italic', marginBottom: 2 }}
           >
             Discover • Claim • Collect • Manage
+          </Typography>
+          
+          {/* Oracle Cloud Badge */}
+          <Typography
+            variant="caption"
+            sx={{
+              backgroundColor: '#f44336',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: 1,
+              marginBottom: 4,
+              display: 'inline-block',
+            }}
+          >
+            🔴 Powered by Oracle Cloud Infrastructure
           </Typography>
 
           {/* Quick Login Cards */}
@@ -252,13 +331,13 @@ const LoginScreen = () => {
                 },
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In with Oracle Cloud'}
             </Button>
           </Box>
 
           {/* Footer */}
           <Typography variant="caption" color="textSecondary" sx={{ mt: 3 }}>
-            Powered by Oracle Cloud Infrastructure
+            🔴 Demo Mode: Falls back to local auth if Oracle Cloud is unavailable
           </Typography>
         </Paper>
       </Container>

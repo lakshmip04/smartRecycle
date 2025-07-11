@@ -9,8 +9,6 @@ import {
   Grid,
   Avatar,
   Chip,
-  Card,
-  CardContent,
   List,
   ListItem,
   ListItemIcon,
