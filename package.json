@@ -1,0 +1,15 @@
+{
+  "name": "smartrecycle-infosys",
+  "version": "1.0.0",
+  "description": "SmartRecycle CircleUp - 15-Hour Hackathon Project",
+  "scripts": {
+    "web": "cd smartrecycle-web && npm start",
+    "install-web": "cd smartrecycle-web && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lakshmip04/smartRecycle.git"
+  },
+  "author": "SmartRecycle Team",
+  "license": "ISC"
+}
