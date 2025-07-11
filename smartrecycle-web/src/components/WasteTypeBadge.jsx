@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chip } from '@mui/material';
-import { Eco, Block } from '@mui/icons-material';
+import { Nature, Block } from '@mui/icons-material';
 
 function WasteTypeBadge({ type }) {
   const isBiodegradable = type === 'Biodegradable' || type === 'biodegradable';
@@ -8,7 +8,7 @@ function WasteTypeBadge({ type }) {
   return (
     <Chip
       label={type}
-      icon={isBiodegradable ? <Eco /> : <Block />}
+      icon={isBiodegradable ? <Nature /> : <Block />}
       sx={{
         bgcolor: isBiodegradable ? 'success.main' : 'error.main',
         color: 'white',
