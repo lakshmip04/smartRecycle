@@ -344,7 +344,7 @@ const AdminDashboard = () => {
       >
         <Toolbar>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            SmartRecycle Admin Dashboard
+            EcoDrop Admin Dashboard
           </Typography>
           <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
             Logout

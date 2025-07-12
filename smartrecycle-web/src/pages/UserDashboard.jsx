@@ -71,7 +71,7 @@ const UserDashboard = () => {
   // Mock user data
   const user = {
     name: 'Demo User',
-    email: 'user@smartrecycle.com',
+    email: 'user@EcoDrop.com',
     totalPosts: 15,
     totalWeight: 68.3, // kg
     co2Saved: 34.2, // kg
@@ -286,7 +286,7 @@ const UserDashboard = () => {
       <AppBar position="static" sx={{ bgcolor: 'primary.main' }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            👤 User Dashboard - SmartRecycle
+            👤 User Dashboard - EcoDrop
           </Typography>
           <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
             Logout

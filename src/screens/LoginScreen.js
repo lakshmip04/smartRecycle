@@ -30,19 +30,19 @@ const LoginScreen = () => {
   // Login credentials for each role
   const roleCredentials = {
     user: {
-      email: 'user@smartrecycle.com',
+      email: 'user@EcoDrop.com',
       password: 'user123',
       name: 'Demo User',
       redirect: '/user-dashboard'
     },
     admin: {
-      email: 'admin@smartrecycle.com',
+      email: 'admin@EcoDrop.com',
       password: 'admin123',
       name: 'Demo Admin',
       redirect: '/admin-dashboard'
     },
     collector: {
-      email: 'collector@smartrecycle.com',
+      email: 'collector@EcoDrop.com',
       password: 'collector123',
       name: 'Demo Collector',
       redirect: '/dashboard'
@@ -130,7 +130,7 @@ const LoginScreen = () => {
               marginBottom: 1,
             }}
           >
-            SmartRecycle
+            EcoDrop
           </Typography>
           <Typography variant="h6" color="textSecondary" gutterBottom>
             CircleUp Portal
@@ -153,7 +153,7 @@ const LoginScreen = () => {
               <CardContent>
                 <Typography variant="h6" color="primary">👤 User</Typography>
                 <Typography variant="body2" color="textSecondary">
-                  user@smartrecycle.com<br/>
+                  user@EcoDrop.com<br/>
                   Password: user123
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
@@ -166,7 +166,7 @@ const LoginScreen = () => {
               <CardContent>
                 <Typography variant="h6" color="primary">🚛 Collector</Typography>
                 <Typography variant="body2" color="textSecondary">
-                  collector@smartrecycle.com<br/>
+                  collector@EcoDrop.com<br/>
                   Password: collector123
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
@@ -179,7 +179,7 @@ const LoginScreen = () => {
               <CardContent>
                 <Typography variant="h6" color="primary">⚙️ Admin</Typography>
                 <Typography variant="body2" color="textSecondary">
-                  admin@smartrecycle.com<br/>
+                  admin@EcoDrop.com<br/>
                   Password: admin123
                 </Typography>
                 <Typography variant="caption" color="textSecondary">

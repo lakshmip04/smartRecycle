@@ -103,7 +103,7 @@ const AdminDashboard = () => {
   return (
     <div className="admin-container">
       <aside className="sidebar">
-        <h3 style={{ color: '#fff', marginBottom: '20px' }}>SmartRecycle Admin</h3>
+        <h3 style={{ color: '#fff', marginBottom: '20px' }}>EcoDrop Admin</h3>
         <button onClick={() => setView('overview')}>Overview</button>
         <button onClick={() => setView('users')}>Users</button>
         <button onClick={() => setView('collectors')}>Collectors</button>

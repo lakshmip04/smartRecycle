@@ -33,7 +33,7 @@ const UserDashboard = () => {
                 👤 User Dashboard
               </Typography>
               <Typography variant="subtitle1">
-                Welcome to SmartRecycle - Post your materials for pickup
+                Welcome to EcoDrop - Post your materials for pickup
               </Typography>
             </Box>
             <Button

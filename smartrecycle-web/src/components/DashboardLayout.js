@@ -54,7 +54,7 @@ const DashboardLayout = () => {
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Nature sx={{ color: 'primary.main' }} />
         <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-          SmartRecycle
+          EcoDrop
         </Typography>
       </Box>
       <Divider />
@@ -127,7 +127,7 @@ const DashboardLayout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            SmartRecycle Collector
+            EcoDrop Collector
           </Typography>
         </Toolbar>
       </AppBar>
