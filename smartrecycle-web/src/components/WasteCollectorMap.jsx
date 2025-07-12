@@ -63,7 +63,6 @@ const WasteCollectorMap = () => {
   const mapRef = useRef();
   const searchTimeoutRef = useRef();
   const collectors = [
-    // Existing collectors
     { id: 1, name: "EcoTech Collectors", location: [12.9716, 77.5946], types: ["electronic", "plastic"], contact: "+91 98765 43210", rating: 4.5 }, // Bengaluru
     { id: 2, name: "Green Waste Solutions", location: [12.2958, 76.6394], types: ["metal", "glass", "plastic"], contact: "+91 98765 43211", rating: 4.3 }, // Mysuru
     { id: 3, name: "Paper & Textile Co.", location: [13.0827, 80.2707], types: ["paper", "textile"], contact: "+91 98765 43212", rating: 4.7 }, // Chennai
@@ -73,7 +72,6 @@ const WasteCollectorMap = () => {
     { id: 7, name: "Universal Collectors", location: [12.8380, 77.6047], types: ["plastic", "metal", "mass collect"], contact: "+91 98765 43216", rating: 4.4 }, // Bengaluru South
     { id: 8, name: "Specialized Waste Co.", location: [12.9260, 77.6762], types: ["electronic", "hazardous", "textile"], contact: "+91 98765 43217", rating: 4.1 }, // Bengaluru East
   
-    // New Collectors (adding 42 more for a total of 50)
     { id: 9, name: "City Scrap & Recycle", location: [19.0760, 72.8777], types: ["metal", "electronic"], contact: "+91 98765 43218", rating: 4.0 }, // Mumbai
     { id: 10, name: "Pune Eco Recycling", location: [18.5204, 73.8567], types: ["paper", "plastic", "organic"], contact: "+91 98765 43219", rating: 4.5 }, // Pune
     { id: 11, name: "Hyderabad Green Circle", location: [17.3850, 78.4867], types: ["glass", "plastic", "metal"], contact: "+91 98765 43220", rating: 4.2 }, // Hyderabad

@@ -1,5 +1,6 @@
-import React, { useState, useEffect,useLocation } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate,useLocation } from 'react-router-dom';
+
 import {
   Box,
   Card,
@@ -48,7 +49,13 @@ const MaterialDetailsScreen = () => {
 
   const handleClaimMaterial = () => {
     if (isClaimed) return;
-    setConfirmDialog(true);
+    // Navigate to collector map with material data for route planning
+    navigate('/dashboard/materials', { 
+      state: { 
+        claimedMaterial: material,
+        activeTab: 1 // Set to Collection Map tab
+      }
+    });
   };
 
   const confirmClaim = () => {

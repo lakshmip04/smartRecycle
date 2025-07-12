@@ -39,7 +39,13 @@ import {
 const WasteClassifier = ({ onClassificationComplete }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [classificationResult, setClassificationResult] = useState(null);
+  const [classificationResult, setClassificationResult] = useState({
+    waste_type: '',
+    biodegradability: '',
+    confidence: 100,
+    recycling_instructions: '',
+    environmental_impact: 'Not applicable'
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
@@ -52,14 +58,17 @@ const WasteClassifier = ({ onClassificationComplete }) => {
   const canvasRef = useRef(null);
 
   // Google Gemini AI Configuration
-  const GEMINI_API_KEY = "AIzaSyC5Ob_itc0pBnopyBxUohxf58fg6muf8RE";
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+//   const GEMINI_API_KEY = "AIzaSyC5Ob_itc0pBnopyBxUohxf58fg6muf8RE" ;
+  const GEMINI_API_KEY = "AIzaSyBxbFV6s-07eCWdHWdUItEo9w9mSHVC5yA";
+  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const classificationPrompt = `
 You are a waste classification assistant.
-Given an image of a waste item, classify it into:
-1. Biodegradable or Non-biodegradable
-2. One of: plastic, metal, human, medical, paper, electronic, organic, glass, textile, hazardous
+Given an image, classify it into:
+1. If the image contains a human person (avoid human if seen partially), classify as "human"
+2. If it's actual waste, classify into one of: plastic, metal, medical, paper, electronic, organic, glass, textile, hazardous
+3. For biodegradability: biodegradable or non-biodegradable
+
 Return your answer in this JSON format:
 {
   "waste_type": "plastic",
@@ -68,14 +77,35 @@ Return your answer in this JSON format:
   "recycling_instructions": "Clean and place in recycling bin",
   "environmental_impact": "High - takes 450+ years to decompose"
 }
+
+IMPORTANT: If you detect a human in the image, respond with:
+{
+  "waste_type": "human",
+  "biodegradability": "biodegradable",
+  "confidence": 100,
+  "recycling_instructions": "Not applicable",
+  "environmental_impact": "Not applicable"
+}
+
 Only return the JSON.
 `;
 
   // Add useEffect to log state changes
   useEffect(() => {
-    console.log("Classification result updated:", classificationResult);
-    console.log("Classification result keys:", classificationResult ? Object.keys(classificationResult) : 'null');
-    console.log("Waste type:", classificationResult?.waste_type);
+    console.log("🔄 useEffect triggered, classificationResult:", classificationResult);
+    if (classificationResult && classificationResult.waste_type) {
+      console.log("✅ Classification result updated:", classificationResult);
+      console.log("✅ Classification result keys:", Object.keys(classificationResult));
+      console.log("✅ Waste type:", classificationResult.waste_type);
+      
+      // Special logging for human detection
+      if (classificationResult.waste_type === 'human') {
+        console.log("🚨 HUMAN DETECTED - Alert should be shown!");
+      }
+    } else {
+      console.log("⚠️ Classification result is empty (initial state or reset)");
+      console.log("⚠️ Current state:", classificationResult);
+    }
   }, [classificationResult]);
 
   const handleImageUpload = (event) => {
@@ -151,9 +181,15 @@ Only return the JSON.
       setImagePreview(e.target.result);
     };
     reader.readAsDataURL(file);
-    setClassificationResult(null);
-    setError('');
-    setResultKey(prev => prev + 1); // Increment key to force re-render
+         setClassificationResult({
+       waste_type: '',
+       biodegradability: '',
+       confidence: 100,
+       recycling_instructions: '',
+       environmental_impact: ''
+     });
+      setError('');
+      setResultKey(prev => prev + 1); // Increment key to force re-render
   };
 
   const classifyWaste = async () => {
@@ -221,12 +257,27 @@ Only return the JSON.
       }
 
       // Update state with the result
-      console.log("Result:", result);
-      setClassificationResult(result);
+      console.log("🔄 Setting classification result:", result);
+      console.log("🔄 Waste type detected:", result.waste_type);
+      
+      // Directly set the result instead of using spread operator
+      setClassificationResult({
+        waste_type: result.waste_type,
+        biodegradability: result.biodegradability,
+        confidence: result.confidence,
+        recycling_instructions: result.recycling_instructions,
+        environmental_impact: result.environmental_impact
+      });
       setResultKey(prev => prev + 1); // Increment key to force re-render
+
+      // Special check for human detection
+      if (result.waste_type === 'human') {
+        console.log("🚨 HUMAN WASTE TYPE DETECTED! Alert should appear.");
+      }
 
       // Callback to parent component
       if (onClassificationComplete) {
+        console.log("📤 Calling onClassificationComplete with result");
         onClassificationComplete({
           image: selectedImage,
           classification: result
@@ -276,7 +327,8 @@ Only return the JSON.
       organic: '🍃',
       glass: '🍾',
       textile: '👕',
-      hazardous: '☢️'
+      hazardous: '☢️',
+      human: '👤'
     };
     return icons[wasteType] || '♻️';
   };
@@ -284,7 +336,13 @@ Only return the JSON.
   const resetClassifier = () => {
     setSelectedImage(null);
     setImagePreview(null);
-    setClassificationResult(null);
+    setClassificationResult({
+        waste_type: '',
+        biodegradability: '',
+        confidence: 100,
+        recycling_instructions: '',
+        environmental_impact: ''
+    });
     setError('');
     stopCamera();
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -459,7 +517,7 @@ Only return the JSON.
            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
              <Science sx={{ mr: 1, color: 'primary.main' }} />
              Classification Results
-             {classificationResult && (
+             {classificationResult.waste_type && (
                <Typography variant="caption" sx={{ ml: 2, bgcolor: 'success.light', px: 1, py: 0.5, borderRadius: 1 }}>
                  Results Available
                </Typography>
@@ -467,7 +525,7 @@ Only return the JSON.
            </Typography>
 
                      {/* Show analyzed image when results are available */}
-           {imagePreview && classificationResult && (
+           {imagePreview && classificationResult.waste_type && (
              <Box sx={{ mb: 3, textAlign: 'center' }}>
                <Typography variant="subtitle1" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                  📸 Analyzed Image
@@ -489,21 +547,24 @@ Only return the JSON.
            )}
 
            {/* Human Detection Warning - shown only when human is detected */}
-           {classificationResult?.waste_type === 'human' && (
-             <Alert 
-               severity="warning" 
-               sx={{ mb: 3, fontWeight: 'bold' }}
-               icon={<Warning fontSize="large" />}
-             >
-               <Typography variant="h6" gutterBottom>
-                 ⚠️ Human Detected in Image
-               </Typography>
-               <Typography variant="body1">
-                 Please upload images of waste materials only. The AI has detected a human in this image. 
-                 For proper waste classification, please capture or upload images containing only waste items 
-                 (plastic, metal, paper, electronics, etc.).
-               </Typography>
-             </Alert>
+           {classificationResult.waste_type === 'human' && (
+             <>
+               {console.log("🚨 RENDERING HUMAN DETECTION ALERT!")}
+               <Alert 
+                 severity="error" 
+                 sx={{ mb: 3, fontWeight: 'bold', border: '2px solid #f44336' }}
+                 icon={<Warning fontSize="large" />}
+               >
+                 <Typography variant="h6" gutterBottom sx={{ color: '#d32f2f' }}>
+                   🚨 Human Detected in Image
+                 </Typography>
+                 <Typography variant="body1">
+                   Please upload images of waste materials only. The AI has detected a human in this image. 
+                   For proper waste classification, please capture or upload images containing only waste items 
+                   (plastic, metal, paper, electronics, etc.).
+                 </Typography>
+               </Alert>
+             </>
            )}
 
           {/* Classification Results Grid - shown always but with empty fields initially */}
@@ -521,7 +582,7 @@ Only return the JSON.
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
                       Waste Type:
                     </Typography>
-                    {classificationResult?.waste_type ? (
+                    {classificationResult.waste_type ? (
                       <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
                         "{classificationResult.waste_type}"
                       </Typography>
@@ -539,7 +600,7 @@ Only return the JSON.
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
                       Biodegradability:
                     </Typography>
-                    {classificationResult?.biodegradability ? (
+                    {classificationResult.biodegradability ? (
                       <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
                         "{classificationResult.biodegradability}"
                       </Typography>
@@ -557,7 +618,7 @@ Only return the JSON.
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
                       Confidence:
                     </Typography>
-                    {classificationResult?.confidence !== undefined ? (
+                    {classificationResult.confidence !== undefined && classificationResult.waste_type ? (
                       <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#0d6efd' }}>
                         {classificationResult.confidence}%
                       </Typography>
@@ -575,7 +636,7 @@ Only return the JSON.
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
                       Environmental Impact:
                     </Typography>
-                    {classificationResult?.environmental_impact ? (
+                    {classificationResult.environmental_impact ? (
                       <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
                         "{classificationResult.environmental_impact}"
                       </Typography>
@@ -593,7 +654,7 @@ Only return the JSON.
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
                       Recycling Instructions:
                     </Typography>
-                    {classificationResult?.recycling_instructions ? (
+                    {classificationResult.recycling_instructions ? (
                       <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#d63384' }}>
                         "{classificationResult.recycling_instructions}"
                       </Typography>
@@ -608,7 +669,7 @@ Only return the JSON.
           </Box>
 
           {/* Enhanced Visual Results - shown only when there are results and not human */}
-          {classificationResult && classificationResult.waste_type !== 'human' && (
+          {classificationResult.waste_type && classificationResult.waste_type !== 'human' && (
             <Box sx={{ mb: 3 }}>
               <Box sx={{ textAlign: 'center', mb: 3 }}>
                 <Typography
@@ -761,7 +822,7 @@ Only return the JSON.
           )}
 
           {/* Action Buttons - shown only when there are results */}
-          {classificationResult && (
+          {classificationResult.waste_type && (
             <Box sx={{ textAlign: 'center', mt: 3 }}>
               <Button
                 variant="outlined"
@@ -795,7 +856,7 @@ Only return the JSON.
           </Box>
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
-          {classificationResult && (
+          {classificationResult.waste_type && (
             <Box>
               <Typography variant="h6" gutterBottom color="primary">
                 Raw API Response:

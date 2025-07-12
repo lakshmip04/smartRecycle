@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -27,93 +27,195 @@ import {
   FilterList,
   Recycling,
   Science,
+  Map as MapIcon,
 } from '@mui/icons-material';
 import WasteClassifier from '../components/WasteClassifier';
+import CollectorMap from '../components/CollectorMap';
 
 const AvailableMaterialsScreen = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+  const [claimedMaterial, setClaimedMaterial] = useState(null);
+
+  // Check if we're coming from a claimed material
+  useEffect(() => {
+    if (location.state?.claimedMaterial) {
+      setClaimedMaterial(location.state.claimedMaterial);
+      setActiveTab(location.state.activeTab || 1);
+    }
+  }, [location.state]);
 
   useEffect(() => {
-    // Mock data for available materials
-    const mockMaterials = [
-      {
-        id: 1,
-        type: 'PET Bottles',
-        weight: 5.2,
-        description: '50+ plastic bottles from office pantry. Clean and sorted.',
-        location: 'Bandra West, Mumbai',
-        distance: '2.3 km',
-        postedBy: 'Rajesh Kumar',
-        postedAt: '2 hours ago',
-        contact: '+91 98765 43210',
-        estimatedValue: '₹156',
-        status: 'available',
-        aiClassification: {
-          waste_type: 'plastic',
-          biodegradability: 'non-biodegradable',
-          confidence: 95
-        }
-      },
-      {
-        id: 2,
-        type: 'Cardboard',
-        weight: 12.8,
-        description: 'Amazon delivery boxes, clean and dry. Perfect for recycling.',
-        location: 'Andheri East, Mumbai',
-        distance: '4.7 km',
-        postedBy: 'Priya Sharma',
-        postedAt: '5 hours ago',
-        contact: '+91 87654 32109',
-        estimatedValue: '₹192',
-        status: 'available',
-        aiClassification: {
-          waste_type: 'paper',
-          biodegradability: 'biodegradable',
-          confidence: 98
-        }
-      },
-      {
-        id: 3,
-        type: 'E-waste',
-        weight: 3.5,
-        description: 'Old mobile phones, chargers, and small electronics.',
-        location: 'Powai, Mumbai',
-        distance: '8.1 km',
-        postedBy: 'Tech Solutions Pvt Ltd',
-        postedAt: '1 day ago',
-        contact: '+91 76543 21098',
-        estimatedValue: '₹875',
-        status: 'available',
-        aiClassification: {
-          waste_type: 'electronic',
-          biodegradability: 'non-biodegradable',
-          confidence: 99
-        }
-      },
-      {
-        id: 4,
-        type: 'Glass Bottles',
-        weight: 8.0,
-        description: 'Wine and beer bottles from restaurant. Clean condition.',
-        location: 'Bandra West, Mumbai',
-        distance: '2.8 km',
-        postedBy: 'Cafe Mocha',
-        postedAt: '3 hours ago',
-        contact: '+91 65432 10987',
-        estimatedValue: '₹240',
-        status: 'available',
-        aiClassification: {
-          waste_type: 'glass',
-          biodegradability: 'non-biodegradable',
-          confidence: 97
-        }
+    // Mock data for available materials  
+  const mockMaterials = [
+    {
+      id: 1,
+      title: 'Plastic Bottles Collection',
+      type: 'PET Bottles',
+      description: '50+ PET bottles from office pantry, clean and sorted',
+      wasteType: 'Plastic',
+      weight: 5.2,
+      location: [12.9716, 77.5946], // Bengaluru (City Center)
+      address: 'MG Road, Bengaluru - 560001',
+      distance: '2.3 km',
+      postedBy: 'Rajesh Kumar',
+      userName: 'Rajesh Kumar',
+      contact: '+91 98765 43210',
+      email: 'rajesh.kumar@email.com',
+      postedAt: '2 hours ago',
+      status: 'available',
+      priority: 'medium',
+      estimatedValue: '₹156',
+      notes: 'Available for pickup between 9 AM - 6 PM',
+      aiClassification: {
+        waste_type: 'plastic',
+        biodegradability: 'non-biodegradable',
+        biodegradable: false,
+        confidence: 95,
+        recycling_instructions: 'Remove caps, rinse thoroughly, sort by color'
       }
-    ];
+    },
+    {
+      id: 2,
+      title: 'Organic Kitchen Waste',
+      type: 'Organic Waste',
+      description: 'Daily kitchen waste - vegetable peels, food scraps',
+      wasteType: 'Organic',
+      weight: 3.8,
+      location: [12.9352, 77.6245], // Bengaluru (Koramangala)
+      address: 'Koramangala, Bengaluru - 560034',
+      distance: '4.7 km',
+      postedBy: 'Priya Sharma',
+      userName: 'Priya Sharma',
+      contact: '+91 87654 32109',
+      email: 'priya.sharma@email.com',
+      postedAt: '1 hour ago',
+      status: 'available',
+      priority: 'high',
+      estimatedValue: '₹76',
+      notes: 'Need immediate pickup due to smell',
+      aiClassification: {
+        waste_type: 'organic',
+        biodegradability: 'biodegradable',
+        biodegradable: true,
+        confidence: 98,
+        recycling_instructions: 'Compost within 24 hours, separate wet and dry waste'
+      }
+    },
+    {
+      id: 3,
+      title: 'Electronic Waste',
+      type: 'E-waste',
+      description: 'Old phones, chargers, and small electronic devices',
+      wasteType: 'E-waste',
+      weight: 2.1,
+      location: [12.9827, 77.5900], // Bengaluru (Shivajinagar)
+      address: 'Shivajinagar, Bengaluru - 560051',
+      distance: '8.1 km',
+      postedBy: 'Tech Solutions Ltd',
+      userName: 'Tech Solutions Ltd',
+      contact: '+91 76543 21098',
+      email: 'disposal@techsolutions.com',
+      postedAt: '4 hours ago',
+      status: 'available',
+      priority: 'medium',
+      estimatedValue: '₹420',
+      notes: 'Corporate pickup, security clearance required',
+      aiClassification: {
+        waste_type: 'electronic',
+        biodegradability: 'non-biodegradable',
+        biodegradable: false,
+        confidence: 99,
+        recycling_instructions: 'Properly dispose at certified e-waste facility'
+      }
+    },
+    {
+      id: 4,
+      title: 'Mixed Paper & Cardboard',
+      type: 'Cardboard',
+      description: 'Amazon boxes, newspapers, office paper',
+      wasteType: 'Paper',
+      weight: 8.5,
+      location: [12.9088, 77.6477], // Bengaluru (HSR Layout)
+      address: 'HSR Layout, Bengaluru - 560102',
+      distance: '2.8 km',
+      postedBy: 'Café Mocha',
+      userName: 'Café Mocha',
+      contact: '+91 65432 10987',
+      email: 'manager@cafemocha.com',
+      postedAt: '6 hours ago',
+      status: 'available',
+      priority: 'low',
+      estimatedValue: '₹255',
+      notes: 'Pickup after 5 PM preferred',
+      aiClassification: {
+        waste_type: 'paper',
+        biodegradability: 'biodegradable',
+        biodegradable: true,
+        confidence: 92,
+        recycling_instructions: 'Remove plastic tape, rinse thoroughly, separate by paper type'
+      }
+    },
+    {
+      id: 5,
+      title: 'Glass Bottles & Jars',
+      type: 'Glass Bottles',
+      description: 'Wine bottles, jam jars, glass containers',
+      wasteType: 'Glass',
+      weight: 6.3,
+      location: [13.0298, 77.5707], // Bengaluru (Malleshwaram)
+      address: 'Malleshwaram, Bengaluru - 560003',
+      distance: '3.2 km',
+      postedBy: 'Anil Patel',
+      userName: 'Anil Patel',
+      contact: '+91 54321 09876',
+      email: 'anil.patel@email.com',
+      postedAt: '8 hours ago',
+      status: 'available',
+      priority: 'medium',
+      estimatedValue: '₹189',
+      notes: 'Handle with care, some items are fragile',
+      aiClassification: {
+        waste_type: 'glass',
+        biodegradability: 'non-biodegradable',
+        biodegradable: false,
+        confidence: 97,
+        recycling_instructions: 'Sort by color, remove labels and caps'
+      }
+    },
+    {
+      id: 6,
+      title: 'Metal Scrap Collection',
+      type: 'Metal Scrap',
+      description: 'Aluminum cans, steel containers, wire scraps',
+      wasteType: 'Metal',
+      weight: 4.7,
+      location: [13.0070, 77.5683], // Bengaluru (Rajajinagar)
+      address: 'Rajajinagar, Bengaluru - 560010',
+      distance: '5.1 km',
+      postedBy: 'Bengaluru Metals Ltd',
+      userName: 'Bengaluru Metals Ltd',
+      contact: '+91 43210 98765',
+      email: 'scrap@bengalurumetal.com',
+      postedAt: '12 hours ago',
+      status: 'available',
+      priority: 'low',
+      estimatedValue: '₹235',
+      notes: 'Industrial waste, safety equipment recommended',
+      aiClassification: {
+        waste_type: 'metal',
+        biodegradability: 'non-biodegradable',
+        biodegradable: false,
+        confidence: 96,
+        recycling_instructions: 'Sort by metal type, remove non-metal attachments'
+      }
+    }
+  ];
 
     setMaterials(mockMaterials);
     setFilteredMaterials(mockMaterials);
@@ -134,7 +236,8 @@ const AvailableMaterialsScreen = () => {
       filtered = filtered.filter(material =>
         material.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         material.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        material.location.toLowerCase().includes(searchTerm.toLowerCase())
+        (material.address && material.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (typeof material.location === 'string' && material.location.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -142,7 +245,16 @@ const AvailableMaterialsScreen = () => {
   }, [materials, filterType, searchTerm]);
 
   const handleClaimMaterial = (materialId) => {
-    navigate(`/material/${materialId}`);
+    const material = materials.find(m => m.id === materialId);
+    if (material) {
+      // Navigate directly to collector map with claimed material data
+      navigate('/dashboard/materials', { 
+        state: { 
+          claimedMaterial: material,
+          activeTab: 1 // Set to Collection Map tab
+        }
+      });
+    }
   };
 
   const handleClassificationComplete = (classificationData) => {
@@ -206,6 +318,11 @@ const AvailableMaterialsScreen = () => {
         <Tab 
           label="Available Materials" 
           icon={<Recycling />} 
+          iconPosition="start"
+        />
+        <Tab 
+          label="Collection Map" 
+          icon={<MapIcon />} 
           iconPosition="start"
         />
         <Tab 
@@ -309,7 +426,7 @@ const AvailableMaterialsScreen = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <LocationOn sx={{ fontSize: 16, mr: 1, color: 'action.active' }} />
                     <Typography variant="body2">
-                      {material.location} • {material.distance}
+                      {material.address || material.location} • {material.distance}
                     </Typography>
                   </Box>
 
@@ -329,7 +446,7 @@ const AvailableMaterialsScreen = () => {
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                      {material.weight} kg
+                      {typeof material.weight === 'number' ? `${material.weight} kg` : material.weight}
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                       {material.estimatedValue}
@@ -373,6 +490,10 @@ const AvailableMaterialsScreen = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
+        <CollectorMap claimedMaterial={claimedMaterial} />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={2}>
         <WasteClassifier onClassificationComplete={handleClassificationComplete} />
       </TabPanel>
     </Box>
