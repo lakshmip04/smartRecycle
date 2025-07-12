@@ -44,12 +44,14 @@ import {
   Nature as EcoIcon,
   Analytics as AnalyticsIcon,
   Map as MapIcon,
+  SmartToy as ChatbotIcon,
 } from '@mui/icons-material';
 import AlertCard from '../components/AlertCard';
 import WasteTypeBadge from '../components/WasteTypeBadge';
 import StatusTag from '../components/StatusTag';
 import WasteClassifier from '../components/WasteClassifier';
 import WasteCollectorMap from '../components/WasteCollectorMap';
+import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -379,6 +381,7 @@ const UserDashboard = () => {
               <Tab label="My Waste Alerts" icon={<EcoIcon />} />
               <Tab label="AI Waste Classifier" icon={<AnalyticsIcon />} />
               <Tab label="Find Collectors" icon={<MapIcon />} />
+              <Tab label="3R Chatbot" icon={<ChatbotIcon />} />
               <Tab label="Posted Materials" icon={<RecyclingIcon />} />
             </Tabs>
 
@@ -483,6 +486,19 @@ const UserDashboard = () => {
             )}
 
             {activeTab === 3 && (
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <ChatbotIcon sx={{ mr: 1 }} />
+                  3R Recommendation Chatbot
+                </Typography>
+                <Typography variant="body2" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
+                  Get personalized recommendations on how to reduce, reuse, and recycle your waste items sustainably.
+                </Typography>
+                <RecycleRecommendationChatbot />
+              </Box>
+            )}
+
+            {activeTab === 4 && (
               <Box>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                   <RecyclingIcon sx={{ mr: 1 }} />
