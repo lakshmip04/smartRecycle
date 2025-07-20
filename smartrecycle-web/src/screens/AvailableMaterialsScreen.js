@@ -18,6 +18,8 @@ import {
   Tabs,
   Tab,
   Divider,
+  Snackbar, // Import Snackbar for notifications
+  Alert,    // Import Alert for Snackbar content
 } from '@mui/material';
 import {
   LocationOn,
@@ -28,6 +30,7 @@ import {
   Recycling,
   Science,
   Map as MapIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import WasteClassifier from '../components/WasteClassifier';
 import CollectorMap from '../components/CollectorMap';
@@ -41,8 +44,11 @@ const AvailableMaterialsScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [claimedMaterial, setClaimedMaterial] = useState(null);
+  const [aiClassificationResult, setAiClassificationResult] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-  // Check if we're coming from a claimed material
   useEffect(() => {
     if (location.state?.claimedMaterial) {
       setClaimedMaterial(location.state.claimedMaterial);
@@ -51,171 +57,171 @@ const AvailableMaterialsScreen = () => {
   }, [location.state]);
 
   useEffect(() => {
-    // Mock data for available materials  
-  const mockMaterials = [
-    {
-      id: 1,
-      title: 'Plastic Bottles Collection',
-      type: 'PET Bottles',
-      description: '50+ PET bottles from office pantry, clean and sorted',
-      wasteType: 'Plastic',
-      weight: 5.2,
-      location: [12.9716, 77.5946], // Bengaluru (City Center)
-      address: 'MG Road, Bengaluru - 560001',
-      distance: '2.3 km',
-      postedBy: 'Rajesh Kumar',
-      userName: 'Rajesh Kumar',
-      contact: '+91 98765 43210',
-      email: 'rajesh.kumar@email.com',
-      postedAt: '2 hours ago',
-      status: 'available',
-      priority: 'medium',
-      estimatedValue: '₹156',
-      notes: 'Available for pickup between 9 AM - 6 PM',
-      aiClassification: {
-        waste_type: 'plastic',
-        biodegradability: 'non-biodegradable',
-        biodegradable: false,
-        confidence: 95,
-        recycling_instructions: 'Remove caps, rinse thoroughly, sort by color'
+    // Mock data for available materials
+    const mockMaterials = [
+      {
+        id: 1,
+        title: 'Plastic Bottles Collection',
+        type: 'PET Bottles',
+        description: '50+ PET bottles from office pantry, clean and sorted',
+        wasteType: 'Plastic',
+        weight: 5.2,
+        location: [12.9716, 77.5946], // Bengaluru (City Center)
+        address: 'MG Road, Bengaluru - 560001',
+        distance: '2.3 km',
+        postedBy: 'Rajesh Kumar',
+        userName: 'Rajesh Kumar',
+        contact: '+91 98765 43210',
+        email: 'rajesh.kumar@email.com',
+        postedAt: '2 hours ago',
+        status: 'available',
+        priority: 'medium',
+        estimatedValue: '₹156',
+        aiClassification: {
+          waste_type: 'plastic',
+          biodegradability: 'non-biodegradable',
+          biodegradable: false,
+          confidence: 95,
+          recycling_instructions: 'Remove caps, rinse thoroughly, sort by color',
+          environmental_impact: 'High'
+        }
+      },
+      {
+        id: 2,
+        title: 'Organic Kitchen Waste',
+        type: 'Organic Waste',
+        description: 'Daily kitchen waste - vegetable peels, food scraps',
+        wasteType: 'Organic',
+        weight: 3.8,
+        location: [12.9352, 77.6245], // Bengaluru (Koramangala)
+        address: 'Koramangala, Bengaluru - 560034',
+        distance: '4.7 km',
+        postedBy: 'Priya Sharma',
+        userName: 'Priya Sharma',
+        contact: '+91 87654 32109',
+        email: 'priya.sharma@email.com',
+        postedAt: '1 hour ago',
+        status: 'available',
+        priority: 'high',
+        estimatedValue: '₹76',
+        aiClassification: {
+          waste_type: 'organic',
+          biodegradability: 'biodegradable',
+          biodegradable: true,
+          confidence: 98,
+          recycling_instructions: 'Compost within 24 hours, separate wet and dry waste',
+          environmental_impact: 'Low'
+        }
+      },
+      {
+        id: 3,
+        title: 'Electronic Waste',
+        type: 'E-waste',
+        description: 'Old phones, chargers, and small electronic devices',
+        wasteType: 'E-waste',
+        weight: 2.1,
+        location: [12.9827, 77.5900], // Bengaluru (Shivajinagar)
+        address: 'Shivajinagar, Bengaluru - 560051',
+        distance: '8.1 km',
+        postedBy: 'Tech Solutions Ltd',
+        userName: 'Tech Solutions Ltd',
+        contact: '+91 76543 21098',
+        email: 'disposal@techsolutions.com',
+        postedAt: '4 hours ago',
+        status: 'available',
+        priority: 'medium',
+        estimatedValue: '₹420',
+        aiClassification: {
+          waste_type: 'electronic',
+          biodegradability: 'non-biodegradable',
+          biodegradable: false,
+          confidence: 99,
+          recycling_instructions: 'Properly dispose at certified e-waste facility',
+          environmental_impact: 'Very High'
+        }
+      },
+      {
+        id: 4,
+        title: 'Mixed Paper & Cardboard',
+        type: 'Cardboard',
+        description: 'Amazon boxes, newspapers, office paper',
+        wasteType: 'Paper',
+        weight: 8.5,
+        location: [12.9088, 77.6477], // Bengaluru (HSR Layout)
+        address: 'HSR Layout, Bengaluru - 560102',
+        distance: '2.8 km',
+        postedBy: 'Café Mocha',
+        userName: 'Café Mocha',
+        contact: '+91 65432 10987',
+        email: 'manager@cafemocha.com',
+        postedAt: '6 hours ago',
+        status: 'available',
+        priority: 'low',
+        estimatedValue: '₹255',
+        aiClassification: {
+          waste_type: 'paper',
+          biodegradability: 'biodegradable',
+          biodegradable: true,
+          confidence: 92,
+          recycling_instructions: 'Remove plastic tape, rinse thoroughly, separate by paper type',
+          environmental_impact: 'Medium'
+        }
+      },
+      {
+        id: 5,
+        title: 'Glass Bottles & Jars',
+        type: 'Glass Bottles',
+        description: 'Wine bottles, jam jars, glass containers',
+        wasteType: 'Glass',
+        weight: 6.3,
+        location: [13.0298, 77.5707], // Bengaluru (Malleshwaram)
+        address: 'Malleshwaram, Bengaluru - 560003',
+        distance: '3.2 km',
+        postedBy: 'Anil Patel',
+        userName: 'Anil Patel',
+        contact: '+91 54321 09876',
+        email: 'anil.patel@email.com',
+        postedAt: '8 hours ago',
+        status: 'available',
+        priority: 'medium',
+        estimatedValue: '₹189',
+        aiClassification: {
+          waste_type: 'glass',
+          biodegradability: 'non-biodegradable',
+          biodegradable: false,
+          confidence: 97,
+          recycling_instructions: 'Sort by color, remove labels and caps',
+          environmental_impact: 'Medium'
+        }
+      },
+      {
+        id: 6,
+        title: 'Metal Scrap Collection',
+        type: 'Metal Scrap',
+        description: 'Aluminum cans, steel containers, wire scraps',
+        wasteType: 'Metal',
+        weight: 4.7,
+        location: [13.0070, 77.5683], // Bengaluru (Rajajinagar)
+        address: 'Rajajinagar, Bengaluru - 560010',
+        distance: '5.1 km',
+        postedBy: 'Bengaluru Metals Ltd',
+        userName: 'Bengaluru Metals Ltd',
+        contact: '+91 43210 98765',
+        email: 'scrap@bengalurumetal.com',
+        postedAt: '12 hours ago',
+        status: 'available',
+        priority: 'low',
+        estimatedValue: '₹235',
+        aiClassification: {
+          waste_type: 'metal',
+          biodegradability: 'non-biodegradable',
+          biodegradable: false,
+          confidence: 96,
+          recycling_instructions: 'Sort by metal type, remove non-metal attachments',
+          environmental_impact: 'High'
+        }
       }
-    },
-    {
-      id: 2,
-      title: 'Organic Kitchen Waste',
-      type: 'Organic Waste',
-      description: 'Daily kitchen waste - vegetable peels, food scraps',
-      wasteType: 'Organic',
-      weight: 3.8,
-      location: [12.9352, 77.6245], // Bengaluru (Koramangala)
-      address: 'Koramangala, Bengaluru - 560034',
-      distance: '4.7 km',
-      postedBy: 'Priya Sharma',
-      userName: 'Priya Sharma',
-      contact: '+91 87654 32109',
-      email: 'priya.sharma@email.com',
-      postedAt: '1 hour ago',
-      status: 'available',
-      priority: 'high',
-      estimatedValue: '₹76',
-      notes: 'Need immediate pickup due to smell',
-      aiClassification: {
-        waste_type: 'organic',
-        biodegradability: 'biodegradable',
-        biodegradable: true,
-        confidence: 98,
-        recycling_instructions: 'Compost within 24 hours, separate wet and dry waste'
-      }
-    },
-    {
-      id: 3,
-      title: 'Electronic Waste',
-      type: 'E-waste',
-      description: 'Old phones, chargers, and small electronic devices',
-      wasteType: 'E-waste',
-      weight: 2.1,
-      location: [12.9827, 77.5900], // Bengaluru (Shivajinagar)
-      address: 'Shivajinagar, Bengaluru - 560051',
-      distance: '8.1 km',
-      postedBy: 'Tech Solutions Ltd',
-      userName: 'Tech Solutions Ltd',
-      contact: '+91 76543 21098',
-      email: 'disposal@techsolutions.com',
-      postedAt: '4 hours ago',
-      status: 'available',
-      priority: 'medium',
-      estimatedValue: '₹420',
-      notes: 'Corporate pickup, security clearance required',
-      aiClassification: {
-        waste_type: 'electronic',
-        biodegradability: 'non-biodegradable',
-        biodegradable: false,
-        confidence: 99,
-        recycling_instructions: 'Properly dispose at certified e-waste facility'
-      }
-    },
-    {
-      id: 4,
-      title: 'Mixed Paper & Cardboard',
-      type: 'Cardboard',
-      description: 'Amazon boxes, newspapers, office paper',
-      wasteType: 'Paper',
-      weight: 8.5,
-      location: [12.9088, 77.6477], // Bengaluru (HSR Layout)
-      address: 'HSR Layout, Bengaluru - 560102',
-      distance: '2.8 km',
-      postedBy: 'Café Mocha',
-      userName: 'Café Mocha',
-      contact: '+91 65432 10987',
-      email: 'manager@cafemocha.com',
-      postedAt: '6 hours ago',
-      status: 'available',
-      priority: 'low',
-      estimatedValue: '₹255',
-      notes: 'Pickup after 5 PM preferred',
-      aiClassification: {
-        waste_type: 'paper',
-        biodegradability: 'biodegradable',
-        biodegradable: true,
-        confidence: 92,
-        recycling_instructions: 'Remove plastic tape, rinse thoroughly, separate by paper type'
-      }
-    },
-    {
-      id: 5,
-      title: 'Glass Bottles & Jars',
-      type: 'Glass Bottles',
-      description: 'Wine bottles, jam jars, glass containers',
-      wasteType: 'Glass',
-      weight: 6.3,
-      location: [13.0298, 77.5707], // Bengaluru (Malleshwaram)
-      address: 'Malleshwaram, Bengaluru - 560003',
-      distance: '3.2 km',
-      postedBy: 'Anil Patel',
-      userName: 'Anil Patel',
-      contact: '+91 54321 09876',
-      email: 'anil.patel@email.com',
-      postedAt: '8 hours ago',
-      status: 'available',
-      priority: 'medium',
-      estimatedValue: '₹189',
-      notes: 'Handle with care, some items are fragile',
-      aiClassification: {
-        waste_type: 'glass',
-        biodegradability: 'non-biodegradable',
-        biodegradable: false,
-        confidence: 97,
-        recycling_instructions: 'Sort by color, remove labels and caps'
-      }
-    },
-    {
-      id: 6,
-      title: 'Metal Scrap Collection',
-      type: 'Metal Scrap',
-      description: 'Aluminum cans, steel containers, wire scraps',
-      wasteType: 'Metal',
-      weight: 4.7,
-      location: [13.0070, 77.5683], // Bengaluru (Rajajinagar)
-      address: 'Rajajinagar, Bengaluru - 560010',
-      distance: '5.1 km',
-      postedBy: 'Bengaluru Metals Ltd',
-      userName: 'Bengaluru Metals Ltd',
-      contact: '+91 43210 98765',
-      email: 'scrap@bengalurumetal.com',
-      postedAt: '12 hours ago',
-      status: 'available',
-      priority: 'low',
-      estimatedValue: '₹235',
-      notes: 'Industrial waste, safety equipment recommended',
-      aiClassification: {
-        waste_type: 'metal',
-        biodegradability: 'non-biodegradable',
-        biodegradable: false,
-        confidence: 96,
-        recycling_instructions: 'Sort by metal type, remove non-metal attachments'
-      }
-    }
-  ];
+    ];
 
     setMaterials(mockMaterials);
     setFilteredMaterials(mockMaterials);
@@ -224,14 +230,12 @@ const AvailableMaterialsScreen = () => {
   useEffect(() => {
     let filtered = materials;
 
-    // Filter by type
     if (filterType !== 'all') {
-      filtered = filtered.filter(material => 
+      filtered = filtered.filter(material =>
         material.type.toLowerCase().includes(filterType.toLowerCase())
       );
     }
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(material =>
         material.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -247,34 +251,80 @@ const AvailableMaterialsScreen = () => {
   const handleClaimMaterial = (materialId) => {
     const material = materials.find(m => m.id === materialId);
     if (material) {
-      // Navigate directly to collector map with claimed material data
-      navigate('/dashboard/materials', { 
-        state: { 
+      navigate('/dashboard/materials', {
+        state: {
           claimedMaterial: material,
-          activeTab: 1 // Set to Collection Map tab
+          activeTab: 1
         }
       });
     }
   };
 
   const handleClassificationComplete = (classificationData) => {
-    // Add the classified waste to available materials
-    const newMaterial = {
-      id: materials.length + 1,
-      type: classificationData.classification.waste_type,
-      weight: 0, // Will be updated by user
-      description: `AI-classified ${classificationData.classification.waste_type}`,
-      location: 'Current Location',
-      distance: '0 km',
-      postedBy: 'You (AI Classified)',
-      postedAt: 'Just now',
-      contact: 'Your contact',
-      estimatedValue: '₹0',
-      status: 'pending',
-      aiClassification: classificationData.classification
-    };
+    // Store the classification result
+    setAiClassificationResult({
+      waste_type: classificationData.classification.waste_type,
+      biodegradability: classificationData.classification.biodegradability,
+      confidence: classificationData.classification.confidence,
+      recycling_instructions: classificationData.classification.recycling_instructions,
+      environmental_impact: classificationData.classification.environmental_impact,
+      image: URL.createObjectURL(classificationData.image),
+    });
     
-    setMaterials(prev => [newMaterial, ...prev]);
+    // Do NOT automatically create a material here.
+    // The user should review the classification and then decide to add it.
+  };
+
+  // Function to create a material from the AI classification result
+  const addClassifiedMaterialToAvailable = () => {
+    if (aiClassificationResult) {
+      // Check if the waste_type is 'human' - same logic as UserDashboard
+      if (aiClassificationResult.waste_type.toLowerCase() === 'human') {
+        setSnackbarMessage('Human detected in image. Please provide an image of waste material only.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        setAiClassificationResult(null); // Clear the result
+        return; // Stop processing invalid classification
+      }
+
+      // Create proper classification object matching the expected structure
+      const aiClassification = {
+        waste_type: aiClassificationResult.waste_type,
+        biodegradability: aiClassificationResult.biodegradability,
+        biodegradable: aiClassificationResult.biodegradability === 'biodegradable',
+        confidence: aiClassificationResult.confidence,
+        recycling_instructions: aiClassificationResult.recycling_instructions,
+        environmental_impact: aiClassificationResult.environmental_impact
+      };
+
+      const newMaterial = {
+        id: materials.length + 1,
+        title: `AI Classified: ${aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1)}`,
+        type: aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1),
+        description: `AI-classified material. ${aiClassificationResult.recycling_instructions || 'No specific instructions provided.'}`,
+        wasteType: aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1),
+        weight: '0 kg', // User should input this when posting
+        location: [12.9716, 77.5946], // Default to Bengaluru coordinates - should be user input
+        address: 'Location to be provided by user',
+        distance: 'N/A',
+        postedBy: 'AI Classification (Collector)',
+        userName: 'Collector (AI Assist)',
+        contact: 'Contact to be provided',
+        email: 'collector@ecodrop.com',
+        postedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' ago',
+        status: 'available',
+        priority: 'medium',
+        estimatedValue: '₹0',
+        aiClassification: aiClassification,
+      };
+
+      setMaterials(prev => [newMaterial, ...prev]);
+      setAiClassificationResult(null); // Clear the classification result after adding
+      setSnackbarMessage('New material added based on AI classification! Please update location and weight details.');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+      setActiveTab(0); // Switch back to Available Materials tab
+    }
   };
 
   const getStatusColor = (status) => {
@@ -297,9 +347,15 @@ const AvailableMaterialsScreen = () => {
       electronic: '📱',
       glass: '🍾',
       metal: '🔧',
-      organic: '🍃'
+      organic: '🍃',
+      textile: '👕',
+      hazardous: '⚠️',
+      medical: '🏥',
+      cardboard: '📦',
+      'e-waste': '📱'
+      // Note: 'human' should never reach here as it's filtered out
     };
-    return icons[wasteType] || '♻️';
+    return icons[wasteType?.toLowerCase()] || '♻️'; // Default recycling icon
   };
 
   const TabPanel = ({ children, value, index }) => (
@@ -308,26 +364,33 @@ const AvailableMaterialsScreen = () => {
     </div>
   );
 
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
         Available Materials & AI Classifier
       </Typography>
-      
+
       <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} sx={{ mb: 3 }}>
-        <Tab 
-          label="Available Materials" 
-          icon={<Recycling />} 
+        <Tab
+          label="Available Materials"
+          icon={<Recycling />}
           iconPosition="start"
         />
-        <Tab 
-          label="Collection Map" 
-          icon={<MapIcon />} 
+        <Tab
+          label="Collection Map"
+          icon={<MapIcon />}
           iconPosition="start"
         />
-        <Tab 
-          label="AI Waste Classifier" 
-          icon={<Science />} 
+        <Tab
+          label="AI Waste Classifier"
+          icon={<Science />}
           iconPosition="start"
         />
       </Tabs>
@@ -366,6 +429,7 @@ const AvailableMaterialsScreen = () => {
                 <MenuItem value="electronic">E-waste</MenuItem>
                 <MenuItem value="glass">Glass</MenuItem>
                 <MenuItem value="metal">Metal</MenuItem>
+                <MenuItem value="organic">Organic</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -380,9 +444,9 @@ const AvailableMaterialsScreen = () => {
         <Grid container spacing={3}>
           {filteredMaterials.map((material) => (
             <Grid item xs={12} md={6} lg={4} key={material.id}>
-              <Card 
+              <Card
                 elevation={3}
-                sx={{ 
+                sx={{
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -394,7 +458,6 @@ const AvailableMaterialsScreen = () => {
                 }}
               >
                 <CardContent sx={{ flexGrow: 1 }}>
-                  {/* Header with type and AI classification */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                       {getWasteTypeIcon(material.aiClassification?.waste_type)} {material.type}
@@ -406,7 +469,6 @@ const AvailableMaterialsScreen = () => {
                     />
                   </Box>
 
-                  {/* AI Classification Badge */}
                   {material.aiClassification && (
                     <Box sx={{ mb: 2 }}>
                       <Chip
@@ -494,10 +556,76 @@ const AvailableMaterialsScreen = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        <WasteClassifier onClassificationComplete={handleClassificationComplete} />
+        <Box>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Science sx={{ mr: 1 }} />
+            AI Waste Classifier
+          </Typography>
+          <WasteClassifier />
+
+          {aiClassificationResult && (
+            <Card variant="outlined" sx={{ mt: 4, p: 3, bgcolor: 'background.paper' }}>
+              <Typography variant="h6" gutterBottom>
+                Classification Result 🤖
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography variant="body1">
+                      <strong>Waste Type:</strong> {aiClassificationResult.waste_type}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Biodegradability:</strong> {aiClassificationResult.biodegradability}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Confidence:</strong> {aiClassificationResult.confidence}%
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Recycling Instructions:</strong> {aiClassificationResult.recycling_instructions}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Environmental Impact:</strong> {aiClassificationResult.environmental_impact}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  {aiClassificationResult.image && (
+                    <Box 
+                      component="img" 
+                      src={aiClassificationResult.image} 
+                      alt="Classified Waste" 
+                      sx={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain', 
+                        borderRadius: '8px' 
+                      }} 
+                    />
+                  )}
+                </Grid>
+              </Grid>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                sx={{ mt: 3 }} 
+                onClick={addClassifiedMaterialToAvailable}
+                startIcon={<AddIcon />}
+              >
+                Add as Available Material
+              </Button>
+            </Card>
+          )}
+        </Box>
       </TabPanel>
+
+      {/* Snackbar for notifications */}
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
-export default AvailableMaterialsScreen; 
+export default AvailableMaterialsScreen;
