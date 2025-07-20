@@ -57,10 +57,8 @@ const WasteClassifier = ({ onClassificationComplete }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Google Gemini AI Configuration
-//   const GEMINI_API_KEY = "AIzaSyC5Ob_itc0pBnopyBxUohxf58fg6muf8RE" ;
-  const GEMINI_API_KEY = "AIzaSyBxbFV6s-07eCWdHWdUItEo9w9mSHVC5yA";
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Cloudflare Worker Configuration
+  const WORKER_URL = "https://gemini-worker.lakshmi20041304.workers.dev";
 
   const classificationPrompt = `
 You are a waste classification assistant.
@@ -222,8 +220,8 @@ Only return the JSON.
         ]
       };
 
-      console.log("Sending request to API...");
-      const response = await fetch(GEMINI_API_URL, {
+      console.log("Sending request to Worker...");
+      const response = await fetch(WORKER_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,17 +230,17 @@ Only return the JSON.
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        throw new Error(`Worker request failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("API response received:", data);
+      console.log("Worker response received:", data);
 
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        throw new Error('Invalid API response format');
+      if (!data.content) {
+        throw new Error('Invalid Worker response format');
       }
 
-      const resultText = data.candidates[0].content.parts[0].text;
+      const resultText = data.content;
       console.log("Result text:", resultText);
 
       // Parse JSON response

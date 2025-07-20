@@ -52,9 +52,8 @@ const RecycleRecommendationChatbot = () => {
   const [expandedTips, setExpandedTips] = useState({});
   const messagesEndRef = useRef(null);
 
-  // Google Gemini AI Configuration
-  const GEMINI_API_KEY = "AIzaSyBxbFV6s-07eCWdHWdUItEo9w9mSHVC5yA";
-  const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Cloudflare Worker Configuration
+  const WORKER_URL = "https://gemini-worker.lakshmi20041304.workers.dev";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -112,7 +111,7 @@ Format your response in a friendly, conversational tone with clear sections for 
     setError('');
 
     try {
-      const response = await fetch(GEMINI_API_URL, {
+      const response = await fetch(WORKER_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +130,7 @@ Format your response in a friendly, conversational tone with clear sections for 
       }
 
       const data = await response.json();
-      const botResponseText = data.candidates[0].content.parts[0].text;
+      const botResponseText = data.content;
 
       const botMessage = {
         id: Date.now() + 1,
