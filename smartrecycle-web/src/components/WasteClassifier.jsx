@@ -36,15 +36,15 @@ import {
   Science,
 } from '@mui/icons-material';
 
-const WasteClassifier = ({ onClassificationComplete }) => {
+const WasteClassifier = ({ onClassificationComplete, showInternalResults = true }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [classificationResult, setClassificationResult] = useState({
     waste_type: '',
     biodegradability: '',
-    confidence: 100,
+    confidence: 0,
     recycling_instructions: '',
-    environmental_impact: 'Not applicable'
+    environmental_impact: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -510,7 +510,8 @@ Only return the JSON.
       </Card>
 
              {/* AI Waste Classifier Results Card - Always shown but with empty fields initially */}
-       <Card elevation={3} sx={{ mb: 3 }} key={resultKey}>
+       {showInternalResults && (
+         <Card elevation={3} sx={{ mb: 3 }} key={resultKey}>
          <CardContent>
            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
              <Science sx={{ mr: 1, color: 'primary.main' }} />
@@ -844,6 +845,7 @@ Only return the JSON.
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Detailed Results Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>

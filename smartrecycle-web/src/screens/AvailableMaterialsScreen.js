@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import WasteClassifier from '../components/WasteClassifier';
 import CollectorMap from '../components/CollectorMap';
+import ConveyorBelt from '../components/ConveyorBelt';
 
 const AvailableMaterialsScreen = () => {
   const navigate = useNavigate();
@@ -261,15 +262,20 @@ const AvailableMaterialsScreen = () => {
   };
 
   const handleClassificationComplete = (classificationData) => {
+    console.log('handleClassificationComplete called with:', classificationData);
+    
     // Store the classification result
-    setAiClassificationResult({
+    const result = {
       waste_type: classificationData.classification.waste_type,
       biodegradability: classificationData.classification.biodegradability,
       confidence: classificationData.classification.confidence,
       recycling_instructions: classificationData.classification.recycling_instructions,
       environmental_impact: classificationData.classification.environmental_impact,
       image: URL.createObjectURL(classificationData.image),
-    });
+    };
+    
+    console.log('Setting aiClassificationResult to:', result);
+    setAiClassificationResult(result);
     
     // Do NOT automatically create a material here.
     // The user should review the classification and then decide to add it.
@@ -561,8 +567,9 @@ const AvailableMaterialsScreen = () => {
             <Science sx={{ mr: 1 }} />
             AI Waste Classifier
           </Typography>
-          <WasteClassifier />
+          <WasteClassifier onClassificationComplete={handleClassificationComplete} showInternalResults={false} />
 
+          {console.log('aiClassificationResult state:', aiClassificationResult)}
           {aiClassificationResult && (
             <Card variant="outlined" sx={{ mt: 4, p: 3, bgcolor: 'background.paper' }}>
               <Typography variant="h6" gutterBottom>
@@ -604,17 +611,18 @@ const AvailableMaterialsScreen = () => {
                   )}
                 </Grid>
               </Grid>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                sx={{ mt: 3 }} 
-                onClick={addClassifiedMaterialToAvailable}
-                startIcon={<AddIcon />}
-              >
-                Add as Available Material
-              </Button>
             </Card>
           )}
+
+          {/* Conditionally render the conveyor belt animation */}
+          {aiClassificationResult && aiClassificationResult.waste_type !== 'human' && (
+            <>
+              <Divider sx={{ my: 4 }} />
+              {console.log('Rendering ConveyorBelt with:', aiClassificationResult)}
+              <ConveyorBelt result={aiClassificationResult} />
+            </>
+          )}
+          
         </Box>
       </TabPanel>
 
