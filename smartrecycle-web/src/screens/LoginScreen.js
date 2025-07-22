@@ -234,6 +234,24 @@ const LoginScreen = () => {
                   >
                     {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
                   </Button>
+                  <Button
+  fullWidth
+  variant="outlined"
+  size="large"
+  onClick={() => navigate('/register')}
+  sx={{
+    py: 1.5,
+    borderColor: '#4CAF50',
+    color: '#4CAF50',
+    '&:hover': {
+      borderColor: '#2E7D32',
+      color: '#2E7D32'
+    }
+  }}
+>
+  New here? Register
+</Button>
+
                 </Box>
               </Paper>
             </Container>

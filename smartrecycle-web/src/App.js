@@ -17,6 +17,9 @@ import AdminDashboard from './pages/AdminDashboard';
 // User Dashboard
 import UserDashboard from './pages/UserDashboard';
 
+//  Import Register Component
+import Register from './components/Register';
+
 // Create Material-UI theme with eco-friendly colors
 const theme = createTheme({
   palette: {
@@ -47,6 +50,10 @@ function App() {
       <Router>
         <div className="App">
           <Routes>
+              
+            {/*  Register Route */}
+            <Route path="/register" element={<Register />} />
+
             {/* Login Route */}
             <Route path="/login" element={<LoginScreen />} />
             
