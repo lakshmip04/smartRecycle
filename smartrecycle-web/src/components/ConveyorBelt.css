@@ -1,140 +1,199 @@
 .animation-container {
-    padding: 2rem 1rem;
-    background-color: #f0f2f5;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid #e0e0e0;
-    margin-top: 2rem;
-  }
+  padding: 1.5rem;
+  background-color: #d7e1ee;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  margin-top: 2rem;
+  min-height: 400px;
+}
+
+.straight-conveyor-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  margin-top: 2rem;
+}
+
+/* --- STRAIGHT CONVEYOR BELT --- */
+.conveyor-belt-straight {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 75px;
+  transform: translateY(-50%);
+  background-color: #3e4042;
+  border-top: 5px solid #222;
+  border-bottom: 5px solid #222;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
   
-  .conveyor-belt-visual {
-    width: 100%;
-    height: 60px;
-    background-color: #3e4042;
-    border: 4px solid #5a5d5f;
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden;
-    background-image: linear-gradient(45deg, #4a4c4e 25%, transparent 25%, transparent 75%, #4a4c4e 75%, #4a4c4e),
-                      linear-gradient(45deg, #4a4c4e 25%, transparent 25%, transparent 75%, #4a4c4e 75%, #4a4c4e);
-    background-size: 20px 20px;
-    animation: move-conveyor-visual 1.5s linear infinite;
-  }
+  /* Moving texture for the straight belt */
+  background-image: linear-gradient(45deg, #4a4c4e 25%, transparent 25%, transparent 75%, #4a4c4e 75%, #4a4c4e);
+  background-size: 30px 30px;
+  animation: move-straight-belt 1s linear infinite;
+  z-index: 1;
+}
+
+@keyframes move-straight-belt {
+  from { background-position: 0 0; }
+  to { background-position: -30px 0; }
+}
+
+/* --- ANIMATED WASTE ITEM --- */
+.waste-item-animated {
+  position: absolute;
+  top: 50%; /* Starts centered on the belt */
+  left: 0;
+  width: 65px;
+  height: 65px;
+  background: white;
+  padding: 5px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border: 2px solid #ccc;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
-  @keyframes move-conveyor-visual {
-    from { background-position: 0 0, 10px 10px; }
-    to { background-position: -20px 0, -10px 10px; }
-  }
-  
-  .waste-item-animated {
-    position: absolute;
-    top: 50%;
-    left: -80px; /* Start off-screen */
-    width: 70px;
-    height: 70px;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: white;
-    padding: 5px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    border: 2px solid #ccc;
-    animation-duration: 8s;
-    animation-timing-function: linear;
-    animation-fill-mode: forwards;
-  }
-  
-  .waste-item-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  
-  .dustbins-visual-container {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 1.5rem;
-    padding: 0.5rem;
-  }
-  
-  .dustbin-visual {
-    width: 14%;
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px dashed #9e9e9e;
-    transition: all 0.5s ease-in-out;
-    opacity: 0.7;
-  }
-  
-  .dustbin-visual.active {
-    border: 3px solid #4caf50;
-    transform: scale(1.1);
-    opacity: 1;
-    background-color: #e8f5e9;
-  }
-  
-  .dustbin-visual-label {
-    font-size: 0.9rem;
-    font-weight: bold;
-    text-align: center;
-  }
-  
-  /* Keyframes for dropping into each bin */
-  /* These percentages represent the position along the viewport width where the item drops */
-  
-  /* Bin 1: Organic (approx 8%) */
-  .waste-item-animated.organic { animation-name: drop-into-bin1; }
-  @keyframes drop-into-bin1 {
-    0%   { transform: translate(0, -50%); }
-    15%  { transform: translate(calc(80vw * 0.08), -50%); }
-    25%  { transform: translate(calc(80vw * 0.08), 100px) scale(0.5); opacity: 0; }
-    100% { transform: translate(calc(80vw * 0.08), 100px) scale(0.5); opacity: 0; }
-  }
-  
-  /* Bin 2: Paper (approx 24%) */
-  .waste-item-animated.paper, .waste-item-animated.cardboard { animation-name: drop-into-bin2; }
-  @keyframes drop-into-bin2 {
-    0%   { transform: translate(0, -50%); }
-    30%  { transform: translate(calc(80vw * 0.24), -50%); }
-    40%  { transform: translate(calc(80vw * 0.24), 100px) scale(0.5); opacity: 0; }
-    100% { transform: translate(calc(80vw * 0.24), 100px) scale(0.5); opacity: 0; }
-  }
-  
-  /* Bin 3: Plastic (approx 40%) */
-  .waste-item-animated.plastic { animation-name: drop-into-bin3; }
-  @keyframes drop-into-bin3 {
-    0%   { transform: translate(0, -50%); }
-    45%  { transform: translate(calc(80vw * 0.40), -50%); }
-    55%  { transform: translate(calc(80vw * 0.40), 100px) scale(0.5); opacity: 0; }
-    100% { transform: translate(calc(80vw * 0.40), 100px) scale(0.5); opacity: 0; }
-  }
-  
-  /* Bin 4: Glass (approx 56%) */
-  .waste-item-animated.glass { animation-name: drop-into-bin4; }
-  @keyframes drop-into-bin4 {
-    0%   { transform: translate(0, -50%); }
-    60%  { transform: translate(calc(80vw * 0.56), -50%); }
-    70%  { transform: translate(calc(80vw * 0.56), 100px) scale(0.5); opacity: 0; }
-    100% { transform: translate(calc(80vw * 0.56), 100px) scale(0.5); opacity: 0; }
-  }
-  
-  /* Bin 5: Metal (approx 72%) */
-  .waste-item-animated.metal { animation-name: drop-into-bin5; }
-  @keyframes drop-into-bin5 {
-    0%   { transform: translate(0, -50%); }
-    75%  { transform: translate(calc(80vw * 0.72), -50%); }
-    85%  { transform: translate(calc(80vw * 0.72), 100px) scale(0.5); opacity: 0; }
-    100% { transform: translate(calc(80vw * 0.72), 100px) scale(0.5); opacity: 0; }
-  }
-  
-  /* Bin 6: E-waste (approx 88%) */
-  .waste-item-animated.ewaste, .waste-item-animated.electronic { animation-name: drop-into-bin6; }
-  @keyframes drop-into-bin6 {
-    0%   { transform: translate(0, -50%); }
-    90%  { transform: translate(calc(80vw * 0.88), -50%); }
-    100% { transform: translate(calc(80vw * 0.88), 100px) scale(0.5); opacity: 0; }
-  }
+  /* Default animation travels across and off-screen */
+  animation: move-across 10s linear forwards;
+}
+
+@keyframes move-across {
+  from { transform: translateX(-100px) translateY(-50%); }
+  to { transform: translateX(100vw) translateY(-50%); }
+}
+
+.waste-item-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* --- DUSTBIN STYLES (Unchanged) --- */
+.dustbin-wrapper {
+  width: 85px;
+  height: 100px;
+  position: absolute;
+  transform: translateX(-50%);
+  perspective: 150px;
+  transition: transform 0.4s ease-in-out;
+  z-index: 5;
+}
+
+.dustbin-wrapper.active {
+  transform: translateX(-50%) scale(1.15);
+  z-index: 15;
+}
+
+.dustbin-top-lid, .dustbin-front {
+  position: absolute;
+  width: 100%;
+}
+.dustbin-top-lid {
+  top: 0;
+  height: 15px;
+  background-color: #555;
+  border-radius: 5px 5px 0 0;
+  transform: rotateX(20deg);
+  border: 2px solid #444;
+}
+.dustbin-front {
+  bottom: 0;
+  height: 85px;
+  border-radius: 0 0 8px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 10px;
+  box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.2);
+  border-bottom: 5px solid rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+.dustbin-wrapper.organic .dustbin-front { background-color: #4caf50; }
+.dustbin-wrapper.paper .dustbin-front { background-color: #2196f3; }
+.dustbin-wrapper.plastic .dustbin-front { background-color: #ffc107; }
+.dustbin-wrapper.glass .dustbin-front { background-color: #00bcd4; }
+.dustbin-wrapper.metal .dustbin-front { background-color: #9e9e9e; }
+.dustbin-wrapper.electronic .dustbin-front, .dustbin-wrapper.ewaste .dustbin-front { background-color: #3f51b5; }
+.dustbin-wrapper.textile .dustbin-front { background-color: #9c27b0; }
+.dustbin-wrapper.hazardous .dustbin-front { background-color: #f44336; }
+.dustbin-wrapper.medical .dustbin-front { background-color: #e91e63; }
+.dustbin-wrapper.active .dustbin-front { box-shadow: inset 0 0 25px #fff, 0 0 15px #ffeb3b; border-color: #ffeb3b; }
+.dustbin-visual-label, .dustbin-text-label { color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+.dustbin-visual-label { font-size: 1.8rem !important; }
+.dustbin-text-label { font-size: 0.7rem !important; font-weight: bold; margin-top: -5px; }
+
+
+/* --- ACCURACY GUARANTEED: New Keyframes using Precise translateX --- */
+
+/* TOP ROW BINS (Drop Upwards) */
+.waste-item-animated.organic { animation-name: drop-organic; }
+@keyframes drop-organic {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  20% { transform: translateX(10vw) translateY(-50%); opacity: 1; }
+  30% { transform: translateX(10vw) translateY(-180%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(10vw) translateY(-180%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.paper { animation-name: drop-paper; }
+@keyframes drop-paper {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  35% { transform: translateX(30vw) translateY(-50%); opacity: 1; }
+  45% { transform: translateX(30vw) translateY(-180%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(30vw) translateY(-180%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.glass { animation-name: drop-glass; }
+@keyframes drop-glass {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  50% { transform: translateX(50vw) translateY(-50%); opacity: 1; }
+  60% { transform: translateX(50vw) translateY(-180%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(50vw) translateY(-180%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.metal { animation-name: drop-metal; }
+@keyframes drop-metal {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  65% { transform: translateX(70vw) translateY(-50%); opacity: 1; }
+  75% { transform: translateX(70vw) translateY(-180%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(70vw) translateY(-180%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.textile { animation-name: drop-textile; }
+@keyframes drop-textile {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  80% { transform: translateX(90vw) translateY(-50%); opacity: 1; }
+  90% { transform: translateX(90vw) translateY(-180%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(90vw) translateY(-180%) scale(0.3); opacity: 0; }
+}
+
+
+/* BOTTOM ROW BINS (Drop Downwards) */
+.waste-item-animated.plastic { animation-name: drop-plastic; }
+@keyframes drop-plastic {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  28% { transform: translateX(20vw) translateY(-50%); opacity: 1; }
+  38% { transform: translateX(20vw) translateY(80%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(20vw) translateY(80%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.electronic, .waste-item-animated.ewaste { animation-name: drop-electronic; }
+@keyframes drop-electronic {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  43% { transform: translateX(40vw) translateY(-50%); opacity: 1; }
+  53% { transform: translateX(40vw) translateY(80%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(40vw) translateY(80%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.hazardous { animation-name: drop-hazardous; }
+@keyframes drop-hazardous {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  58% { transform: translateX(60vw) translateY(-50%); opacity: 1; }
+  68% { transform: translateX(60vw) translateY(80%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(60vw) translateY(80%) scale(0.3); opacity: 0; }
+}
+.waste-item-animated.medical { animation-name: drop-medical; }
+@keyframes drop-medical {
+  0% { transform: translateX(-100px) translateY(-50%); }
+  73% { transform: translateX(80vw) translateY(-50%); opacity: 1; }
+  83% { transform: translateX(80vw) translateY(80%) scale(0.3); opacity: 0; }
+  100% { transform: translateX(80vw) translateY(80%) scale(0.3); opacity: 0; }
+}
