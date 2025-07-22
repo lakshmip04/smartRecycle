@@ -80,3 +80,4 @@ coverage/
 .vscode/
 .watchmanconfig 
 /smartrecycle-web/node_modules
+/generated/prisma
