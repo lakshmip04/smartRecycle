@@ -1,37 +1,52 @@
 import React from 'react';
 import { Chip } from '@mui/material';
-import { Schedule, CheckCircle, LocalShipping } from '@mui/icons-material';
+import { 
+    Schedule, 
+    CheckCircle, 
+    LocalShipping, 
+    TaskAlt, // A better icon for 'Completed'
+    Cancel, // Icon for 'Cancelled'
+} from '@mui/icons-material';
 
-function StatusTag({ status }) {
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'Pending':
+export default function StatusTag({ status }) {
+  // This function is now updated to match the status values from your Prisma schema
+  const getStatusConfig = (currentStatus) => {
+    switch (currentStatus) {
+      case 'PENDING':
         return {
+          label: 'Pending',
           color: 'warning',
           icon: <Schedule />,
-          bgcolor: 'warning.light',
-          textColor: 'warning.contrastText'
         };
-      case 'Accepted':
+      case 'CLAIMED':
         return {
+          label: 'Claimed',
           color: 'info',
           icon: <CheckCircle />,
-          bgcolor: 'info.light',
-          textColor: 'info.contrastText'
         };
-      case 'Collected':
+      case 'IN_TRANSIT':
         return {
-          color: 'success',
+          label: 'In Transit',
+          color: 'primary',
           icon: <LocalShipping />,
-          bgcolor: 'success.light',
-          textColor: 'success.contrastText'
+        };
+      case 'COMPLETED':
+        return {
+          label: 'Completed',
+          color: 'success',
+          icon: <TaskAlt />,
+        };
+      case 'CANCELLED':
+        return {
+          label: 'Cancelled',
+          color: 'error',
+          icon: <Cancel />,
         };
       default:
         return {
+          label: currentStatus || 'Unknown',
           color: 'default',
           icon: <Schedule />,
-          bgcolor: 'grey.300',
-          textColor: 'text.primary'
         };
     }
   };
@@ -40,19 +55,11 @@ function StatusTag({ status }) {
 
   return (
     <Chip
-      label={status}
+      label={config.label}
       icon={config.icon}
-      sx={{
-        bgcolor: config.bgcolor,
-        color: config.textColor,
-        fontWeight: 'bold',
-        '& .MuiChip-icon': {
-          color: config.textColor
-        }
-      }}
+      color={config.color}
       size="small"
+      sx={{ fontWeight: 'medium' }}
     />
   );
 }
-
-export default StatusTag; 

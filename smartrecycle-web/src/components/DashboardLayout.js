@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import {
   AppBar,
   Toolbar,
@@ -15,72 +15,68 @@ import {
   Box,
   Divider,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Button // Added for logout button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Recycling,
-  LocalShipping,
-  Person,
+  ExitToApp as LogoutIcon, // Added for logout button
   Nature
 } from '@mui/icons-material';
 
-const DashboardLayout = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const drawerWidth = 240;
+
+// The Layout now accepts navItems and a pageTitle to be truly reusable
+export default function DashboardLayout({ children, navItems, pageTitle }) {
+  const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
-  const navItems = [
-    { name: 'Materials', path: '/dashboard/materials', icon: <Recycling /> },
-    { name: 'Collections', path: '/dashboard/collections', icon: <LocalShipping /> },
-    { name: 'Profile', path: '/dashboard/profile', icon: <Person /> },
-  ];
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('user_data');
+    if (storedUserData) {
+      setUser(JSON.parse(storedUserData));
+    } else {
+      router.push('/'); // If no user, redirect to login
+    }
+  }, [router]);
 
   const handleNavigation = (path) => {
-    navigate(path);
-    setMobileOpen(false); // Close mobile drawer after navigation
+    router.push(path);
+    if (isMobile) {
+      setMobileOpen(false);
+    }
   };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
-
-  const drawerWidth = 240;
+  
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/');
+  };
 
   const drawer = (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Nature sx={{ color: 'primary.main' }} />
         <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-          EcoDrop
+          SmartRecycle
         </Typography>
       </Box>
       <Divider />
       <List>
-        {navItems.map((item) => (
+        {/* The navItems are now passed in as a prop */}
+        {navItems && navItems.map((item) => (
           <ListItem key={item.name} disablePadding>
             <ListItemButton 
               onClick={() => handleNavigation(item.path)}
-              selected={location.pathname.includes(item.path)}
-              sx={{
-                '&.Mui-selected': {
-                  backgroundColor: 'primary.light',
-                  color: 'primary.contrastText',
-                  '&:hover': {
-                    backgroundColor: 'primary.main',
-                  },
-                },
-              }}
+              selected={router.pathname === item.path}
             >
-              <ListItemIcon 
-                sx={{ 
-                  color: location.pathname.includes(item.path) ? 'primary.contrastText' : 'inherit' 
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
+              <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.name} />
             </ListItemButton>
           </ListItem>
@@ -88,32 +84,32 @@ const DashboardLayout = () => {
       </List>
       <Box sx={{ mt: 'auto', p: 2 }}>
         <Divider sx={{ mb: 2 }} />
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
-            SR
-          </Avatar>
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-              Collector User
-            </Typography>
-            <Typography variant="caption" color="textSecondary">
-              collector@example.com
-            </Typography>
+        {user && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+              {user.profile?.name?.charAt(0) || 'U'}
+            </Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                {user.profile?.name}
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                {user.email}
+              </Typography>
+            </Box>
           </Box>
-        </Box>
+        )}
       </Box>
     </Box>
   );
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* App Bar */}
       <AppBar
         position="fixed"
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
-          bgcolor: 'primary.main',
         }}
       >
         <Toolbar>
@@ -127,49 +123,35 @@ const DashboardLayout = () => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            EcoDrop Collector
+            {pageTitle || 'Dashboard'} {/* The pageTitle is now a prop */}
           </Typography>
+          <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
+            Logout
+          </Button>
         </Toolbar>
       </AppBar>
 
-      {/* Navigation Drawer */}
       <Box
         component="nav"
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
       >
-        {/* Mobile drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: drawerWidth,
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%'
-            },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
         >
           {drawer}
         </Drawer>
-        {/* Desktop drawer */}
         <Drawer
           variant="permanent"
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: drawerWidth,
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%'
-            },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
           open
         >
@@ -177,7 +159,6 @@ const DashboardLayout = () => {
         </Drawer>
       </Box>
 
-      {/* Main content */}
       <Box
         component="main"
         sx={{
@@ -185,14 +166,11 @@ const DashboardLayout = () => {
           p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
           bgcolor: 'background.default',
-          minHeight: '100vh'
         }}
       >
-        <Toolbar /> {/* This adds space for the fixed AppBar */}
-        <Outlet />
+        <Toolbar />
+        {children}
       </Box>
     </Box>
   );
 };
-
-export default DashboardLayout;

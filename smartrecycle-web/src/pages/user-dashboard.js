@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic';
 import {
   Box,
   Container,
@@ -17,8 +18,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  AppBar,
-  Toolbar,
   Fab,
   Tabs,
   Tab,
@@ -28,22 +27,32 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  ExitToApp as LogoutIcon,
-  Recycling as RecyclingIcon,
   Analytics as AnalyticsIcon,
   Map as MapIcon,
   SmartToy as ChatbotIcon,
-  Eco as EcoIcon
+  Nature as EcoIcon,
+  Person as PersonIcon // Added for profile link
 } from '@mui/icons-material';
-// Assuming your components are in src/components
-// import AlertCard from '../components/AlertCard'; 
-// import WasteClassifier from '../components/WasteClassifier';
-// import WasteCollectorMap from '../components/WasteCollectorMap';
-// import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
+// --- Import your actual components ---
+import DashboardLayout from '../components/DashboardLayout'; // Import the main layout
+import AlertCard from '../components/AlertCard'; 
+import WasteClassifier from '../components/WasteClassifier';
+import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
 
-// Placeholder component until you create the real one
-const AlertCard = ({ alert }) => (
-    <Card variant="outlined"><CardContent><Typography>{alert.description || 'No description'}</Typography><Typography variant="caption">Status: {alert.status}</Typography></CardContent></Card>
+// Dynamically import the map component to prevent server-side rendering errors
+const WasteCollectorMapWithNoSSR = dynamic(
+  () => import('../components/WasteCollectorMap'),
+  { 
+    ssr: false,
+    loading: () => <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+  }
+);
+
+// A helper component to render the content of each tab
+const TabPanel = ({ children, value, index }) => (
+  <div role="tabpanel" hidden={value !== index}>
+    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+  </div>
 );
 
 
@@ -68,12 +77,15 @@ export default function UserDashboard() {
     pickupAddress: '',
   });
 
-  // This useEffect hook runs when the component mounts
+  // Define the navigation items specific to the User
+  const userNavItems = [
+    { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
+    { name: 'My Profile', path: '/profile', icon: <PersonIcon /> },
+  ];
+
   useEffect(() => {
-    // Get user data from localStorage
     const storedUserData = localStorage.getItem('user_data');
     if (!storedUserData) {
-      // If no user data, redirect to login page
       router.push('/');
       return;
     }
@@ -81,7 +93,6 @@ export default function UserDashboard() {
     const parsedUser = JSON.parse(storedUserData);
     setUser(parsedUser);
 
-    // Function to fetch alerts from our backend API
     const fetchAlerts = async (userId) => {
       try {
         const response = await fetch(`/api/users/${userId}/alerts`);
@@ -97,16 +108,12 @@ export default function UserDashboard() {
       }
     };
 
-    // Fetch the alerts for the logged-in user
     if (parsedUser?.id) {
         fetchAlerts(parsedUser.id);
+    } else {
+        setLoading(false);
     }
-  }, [router]); // Dependency array ensures this runs only once
-
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/');
-  };
+  }, [router]);
 
   const handleCreateAlert = async () => {
     if (!newAlertData.wasteType || !newAlertData.weightEstimate || !newAlertData.pickupAddress) {
@@ -115,7 +122,7 @@ export default function UserDashboard() {
     }
     setError('');
     
-    // TODO: In a real app, you'd get lat/lng from the address via a geocoding API
+    // In a real app, you'd get lat/lng from the address via a geocoding API
     const placeholderCoords = { lat: 12.9716, lng: 77.5946 };
 
     try {
@@ -134,10 +141,9 @@ export default function UserDashboard() {
         const result = await response.json();
 
         if (response.ok) {
-            // Add the new alert to the top of our list to update the UI
             setWasteAlerts([result.alert, ...wasteAlerts]);
-            setOpenDialog(false); // Close the dialog
-            setNewAlertData({ // Reset the form
+            setOpenDialog(false);
+            setNewAlertData({
                 wasteType: 'GENERAL',
                 description: '',
                 weightEstimate: '',
@@ -151,6 +157,18 @@ export default function UserDashboard() {
     }
   };
 
+  // This function is called by the WasteClassifier component when it has a result
+  const handleClassificationComplete = (classificationData) => {
+    // Pre-fill the new alert form with data from the AI
+    setNewAlertData(prev => ({
+        ...prev,
+        description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
+        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+    }));
+    // Open the dialog so the user can complete and post the alert
+    setOpenDialog(true);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -160,47 +178,29 @@ export default function UserDashboard() {
   }
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: 'grey.100', minHeight: '100vh' }}>
-      {/* Header */}
-      <AppBar position="static" sx={{ bgcolor: 'primary.main' }}>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            👤 User Dashboard - SmartRecycle
-          </Typography>
-          <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Welcome Section */}
+    // The entire page is now wrapped in the DashboardLayout
+    <DashboardLayout navItems={userNavItems} pageTitle="User Dashboard">
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" gutterBottom>
             Welcome back, {user?.profile?.name || 'User'}! 👋
           </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Here's an overview of your recycling activity. Create a new alert to get started.
-          </Typography>
         </Box>
 
-        {/* Stats Cards - You can wire these up later with aggregated data */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-            {/* Placeholder stats cards */}
             <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography>Total Posts</Typography><Typography variant="h4">{wasteAlerts.length}</Typography></CardContent></Card></Grid>
             <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography>Pending</Typography><Typography variant="h4">{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></CardContent></Card></Grid>
             <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography>In Progress</Typography><Typography variant="h4">{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></CardContent></Card></Grid>
             <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography>Completed</Typography><Typography variant="h4">{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></CardContent></Card></Grid>
         </Grid>
 
-        {/* Main Content with Tabs */}
         <Card elevation={3}>
           <CardContent>
             <Tabs 
               value={activeTab} 
               onChange={(e, newValue) => setActiveTab(newValue)}
-              variant="fullWidth"
-              sx={{ mb: 3 }}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
             >
               <Tab label="My Waste Alerts" icon={<EcoIcon />} />
               <Tab label="AI Waste Classifier" icon={<AnalyticsIcon />} />
@@ -208,31 +208,34 @@ export default function UserDashboard() {
               <Tab label="3R Chatbot" icon={<ChatbotIcon />} />
             </Tabs>
 
-            {/* Tab Content */}
-            {activeTab === 0 && (
-              <Box>
-                <Typography variant="h6" gutterBottom>My Waste Alerts</Typography>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                <Stack spacing={2}>
-                  {wasteAlerts.length > 0 ? (
-                    wasteAlerts.map((alert) => (
-                      <AlertCard key={alert.id} alert={alert} />
-                    ))
-                  ) : (
-                    <Typography color="textSecondary">No waste alerts posted yet.</Typography>
-                  )}
-                </Stack>
-              </Box>
-            )}
+            <TabPanel value={activeTab} index={0}>
+              <Typography variant="h6" gutterBottom>My Waste Alerts</Typography>
+              {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+              <Stack spacing={2}>
+                {wasteAlerts.length > 0 ? (
+                  wasteAlerts.map((alert) => (
+                    <AlertCard key={alert.id} alert={alert} />
+                  ))
+                ) : (
+                  <Typography color="textSecondary">No waste alerts posted yet.</Typography>
+                )}
+              </Stack>
+            </TabPanel>
 
-            {/* Add other tab panels here, linking to your other components */}
-            {activeTab === 1 && <Typography>AI Waste Classifier Component Goes Here</Typography>}
-            {activeTab === 2 && <Typography>Find Collectors Map Component Goes Here</Typography>}
-            {activeTab === 3 && <Typography>Chatbot Component Goes Here</Typography>}
+            <TabPanel value={activeTab} index={1}>
+                <WasteClassifier onClassificationComplete={handleClassificationComplete} />
+            </TabPanel>
+
+            <TabPanel value={activeTab} index={2}>
+                <WasteCollectorMapWithNoSSR />
+            </TabPanel>
+
+            <TabPanel value={activeTab} index={3}>
+                <RecycleRecommendationChatbot />
+            </TabPanel>
           </CardContent>
         </Card>
 
-        {/* Floating Action Button */}
         <Fab
           color="primary"
           aria-label="Create new alert"
@@ -242,7 +245,6 @@ export default function UserDashboard() {
           <AddIcon />
         </Fab>
 
-        {/* Add Material Dialog */}
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Post New Waste Alert</DialogTitle>
           <DialogContent>
@@ -255,7 +257,6 @@ export default function UserDashboard() {
                     onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })}
                     label="Waste Type"
                   >
-                    {/* These values must match your Prisma Enum */}
                     <MenuItem value="GENERAL">General</MenuItem>
                     <MenuItem value="RECYCLABLE">Recyclable</MenuItem>
                     <MenuItem value="E_WASTE">E-Waste</MenuItem>
@@ -265,42 +266,21 @@ export default function UserDashboard() {
                 </FormControl>
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Estimated Weight (kg)"
-                  type="number"
-                  value={newAlertData.weightEstimate}
-                  onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })}
-                />
+                <TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Pickup Address"
-                  value={newAlertData.pickupAddress}
-                  onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })}
-                />
+                <TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} />
               </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Description (optional)"
-                  multiline
-                  rows={3}
-                  value={newAlertData.description}
-                  onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })}
-                />
+                <TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleCreateAlert} variant="contained">
-              Create Alert
-            </Button>
+            <Button onClick={handleCreateAlert} variant="contained">Create Alert</Button>
           </DialogActions>
         </Dialog>
-      </Container>
-    </Box>
+    </DashboardLayout>
   );
 }
