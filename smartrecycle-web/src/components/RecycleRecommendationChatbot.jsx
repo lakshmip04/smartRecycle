@@ -1,3 +1,4 @@
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
@@ -51,6 +52,58 @@ const RecycleRecommendationChatbot = () => {
   const [error, setError] = useState('');
   const [expandedTips, setExpandedTips] = useState({});
   const messagesEndRef = useRef(null);
+
+  // Voice recognition state and handler
+const {
+  transcript,
+  listening,
+  resetTranscript,
+  browserSupportsSpeechRecognition,
+} = useSpeechRecognition();
+
+useEffect(() => {
+  if (!listening && transcript) {
+    setInputMessage((prev) => (prev ? prev + ' ' + transcript : transcript));
+    resetTranscript();
+  }
+}, [listening, transcript, resetTranscript]);
+
+const handleVoiceInput = () => {
+  if (!browserSupportsSpeechRecognition) {
+    alert('Your browser does not support voice recognition.');
+    return;
+  }
+
+  if (listening) {
+    SpeechRecognition.stopListening();
+  } else {
+    resetTranscript();
+    SpeechRecognition.startListening({ continuous: false });
+  }
+};
+const speakText = (text) => {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+
+    // Clean up markdown symbols
+    const cleanedText = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove bold
+      .replace(/\*(.*?)\*/g, '$1')      // Remove italic
+      .replace(/_(.*?)_/g, '$1')        // Remove underscores
+      .replace(/`(.*?)`/g, '$1')        // Remove inline code
+      .replace(/#+\s?(.*)/g, '$1');     // Remove heading markers
+
+    const utterance = new SpeechSynthesisUtterance(cleanedText);
+    utterance.lang = 'en-US';
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.warn('Text-to-speech not supported in this browser.');
+  }
+};
+
+
+
 
   // Cloudflare Worker Configuration
   const WORKER_URL = "https://gemini-worker.lakshmi20041304.workers.dev";
@@ -129,17 +182,25 @@ Format your response in a friendly, conversational tone with clear sections for 
         throw new Error('Failed to get response from AI');
       }
 
-      const data = await response.json();
-      const botResponseText = data.content;
+    const data = await response.json();
+const botResponseText = data.content;
 
-      const botMessage = {
-        id: Date.now() + 1,
-        type: 'bot',
-        content: botResponseText,
-        timestamp: new Date(),
-      };
+// ✅ Clean markdown formatting like **bold**, *italic*, etc.
+const cleanedText = botResponseText
+  .replace(/\*\*(.*?)\*\*/g, '$1')   // remove **bold**
+  .replace(/\*(.*?)\*/g, '$1')       // remove *italic*
+  .replace(/_(.*?)_/g, '$1')         // remove _underscore_
+  .replace(/`(.*?)`/g, '$1')         // remove `code`
 
-      setMessages(prev => [...prev, botMessage]);
+const botMessage = {
+  id: Date.now() + 1,
+  type: 'bot',
+  content: cleanedText,
+  timestamp: new Date(),
+};
+
+setMessages(prev => [...prev, botMessage]);
+speakText(cleanedText); // 🔈 Use cleaned text for voice too , Bot speaks here!
     } catch (error) {
       console.error('Error:', error);
       setError('Sorry, I encountered an error. Please try again.');
@@ -243,6 +304,8 @@ Format your response in a friendly, conversational tone with clear sections for 
       default: return 'info.light';
     }
   };
+
+  
 
   return (
     <Card sx={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
@@ -385,6 +448,16 @@ Format your response in a friendly, conversational tone with clear sections for 
             >
               <Send />
             </Button>
+            <Button
+  variant={listening ? 'outlined' : 'contained'}
+  color="secondary"
+  onClick={handleVoiceInput}
+  disabled={isLoading}
+  sx={{ minWidth: 'auto', px: 2 }}
+>
+  {listening ? '🛑 Stop' : '🎤 Voice'}
+</Button>
+
           </Box>
         </Box>
       </CardContent>
