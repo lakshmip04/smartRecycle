@@ -2,10 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/api/auth/login": "pages/api/auth/login.js",
-  "/collector-dashboard": "pages/collector-dashboard.js",
   "/user-dashboard": "pages/user-dashboard.js",
-  "/api/users/[userId]/alerts": "pages/api/users/[userId]/alerts.js",
-  "/api/alerts/create": "pages/api/alerts/create.js"
+  "/api/users/[userId]/alerts": "pages/api/users/[userId]/alerts.js"
 }

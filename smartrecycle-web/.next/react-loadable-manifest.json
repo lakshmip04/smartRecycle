@@ -19,16 +19,10 @@
     "id": "components\\WasteCollectorMap.jsx -> react-leaflet",
     "files": []
   },
-  "pages\\collector-dashboard.js -> ../components/WasteCollectorMap": {
-    "id": "pages\\collector-dashboard.js -> ../components/WasteCollectorMap",
-    "files": [
-      "static/chunks/src_components_WasteCollectorMap_jsx-_90cd1.js"
-    ]
-  },
   "pages\\user-dashboard.js -> ../components/WasteCollectorMap": {
     "id": "pages\\user-dashboard.js -> ../components/WasteCollectorMap",
     "files": [
-      "static/chunks/src_components_WasteCollectorMap_jsx-_90cd0.js"
+      "static/chunks/src_components_WasteCollectorMap_jsx.js"
     ]
   }
 }
