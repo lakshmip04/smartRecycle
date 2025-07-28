@@ -32,18 +32,18 @@ import {
   Recycling,
   Science,
   Map as MapIcon,
+  Close as RejectIcon,
 } from '@mui/icons-material';
 import DashboardLayout from '../components/DashboardLayout';
 import WasteTypeBadge from '../components/WasteTypeBadge';
 import WasteClassifier from '../components/WasteClassifier';
 
-// Dynamically import the map component to prevent server-side rendering errors
 const WasteCollectorMapWithNoSSR = dynamic(
   () => import('../components/WasteCollectorMap'),
   { ssr: false }
 );
 
-const MaterialCard = ({ material, handleClaimMaterial, claimingId }) => {
+const MaterialCard = ({ material, handleClaimMaterial, handleRejectMaterial, claimingId }) => {
     const router = useRouter();
     const handleCardClick = () => {
         router.push(`/alerts/${material.id}`);
@@ -70,22 +70,38 @@ const MaterialCard = ({ material, handleClaimMaterial, claimingId }) => {
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Schedule sx={{ fontSize: 16, mr: 1 }} />
-                        <Typography variant="body2">{new Date(material.createdAt).toLocaleString()}</Typography>
+                        <Typography variant="body2">
+                            {material.pickupTimeSlot ? `Slot: ${material.pickupTimeSlot}` : new Date(material.createdAt).toLocaleString()}
+                        </Typography>
                     </Box>
                 </CardContent>
             </CardActionArea>
             <Divider />
-            <CardActions sx={{ p: 2 }}>
+            <CardActions sx={{ p: 2, display: 'flex', gap: 1 }}>
+                <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    startIcon={<RejectIcon />}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleRejectMaterial(material.id);
+                    }}
+                >
+                    Reject
+                </Button>
                 <Button
                     variant="contained"
                     fullWidth
+                    size="small"
                     onClick={(e) => {
                         e.stopPropagation();
                         handleClaimMaterial(material.id);
                     }}
                     disabled={claimingId === material.id}
                 >
-                    {claimingId === material.id ? <CircularProgress size={24} /> : 'Claim Material'}
+                    {claimingId === material.id ? <CircularProgress size={24} /> : 'Claim'}
                 </Button>
             </CardActions>
         </Card>
@@ -190,6 +206,25 @@ export default function CollectorDashboardPage() {
     }
   };
 
+  const handleRejectMaterial = async (alertId) => {
+    try {
+        const response = await fetch(`/api/alerts/${alertId}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectorId: user.id }),
+        });
+        const result = await response.json();
+        if (response.ok) {
+            setMaterials(prev => prev.filter(m => m.id !== alertId));
+            setSnackbar({ open: true, message: 'Job rejected and hidden.', severity: 'info' });
+        } else {
+            throw new Error(result.message || 'Failed to reject material.');
+        }
+    } catch (err) {
+        setSnackbar({ open: true, message: err.message, severity: 'error' });
+    }
+  };
+
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
   return (
@@ -237,7 +272,12 @@ export default function CollectorDashboardPage() {
             <Grid container spacing={3}>
                 {filteredMaterials.map((material) => (
                     <Grid item xs={12} md={6} lg={4} key={material.id}>
-                        <MaterialCard material={material} handleClaimMaterial={handleClaimMaterial} claimingId={claimingId} />
+                        <MaterialCard 
+                            material={material} 
+                            handleClaimMaterial={handleClaimMaterial} 
+                            handleRejectMaterial={handleRejectMaterial}
+                            claimingId={claimingId} 
+                        />
                     </Grid>
                 ))}
                 {filteredMaterials.length === 0 && (

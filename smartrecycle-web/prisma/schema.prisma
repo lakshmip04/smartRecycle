@@ -19,14 +19,12 @@ generator client {
 // ENUMS
 // ---------------------------
 
-// Defines the primary roles within the application.
 enum Role {
   HOUSEHOLD
   COLLECTOR
   ADMIN
 }
 
-// Defines the possible statuses for a waste pickup alert.
 enum AlertStatus {
   PENDING
   CLAIMED
@@ -35,7 +33,6 @@ enum AlertStatus {
   CANCELLED
 }
 
-// Defines the categories of waste that can be collected.
 enum WasteType {
   GENERAL
   RECYCLABLE
@@ -51,7 +48,6 @@ enum WasteType {
 // MODELS
 // ---------------------------
 
-// Central User model for authentication and basic info.
 model User {
   id               String            @id @default(cuid())
   email            String            @unique
@@ -66,7 +62,6 @@ model User {
   reviewsGiven     Review[]          @relation("ReviewsGivenByUser")
 }
 
-// Profile specific to a regular household user.
 model HouseholdProfile {
   id          String   @id @default(cuid())
   userId      String   @unique
@@ -78,25 +73,23 @@ model HouseholdProfile {
   longitude   Float?
 }
 
-// Profile specific to a waste collector.
 model CollectorProfile {
   id                  String      @id @default(cuid())
   userId              String      @unique
   user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                String
-  address             String      @db.Text // ADDED: Collector's address
-  latitude            Float?      // ADDED: For mapping the collector's base
-  longitude           Float?      // ADDED: For mapping the collector's base
+  address             String      @db.Text
+  latitude            Float?
+  longitude           Float?
   identityDocumentUrl String
   isVerified          Boolean     @default(false)
   vehicleDetails      String?
   acceptedWasteTypes  WasteType[]
   alertsClaimed       WasteAlert[] @relation("AlertsClaimedByCollector")
   reviewsReceived     Review[]    @relation("ReviewsReceivedByCollector")
+  rejections          AlertRejection[]
 }
 
-
-// The core model for a waste pickup request ("Alert").
 model WasteAlert {
   id              String      @id @default(cuid())
   status          AlertStatus @default(PENDING)
@@ -107,6 +100,7 @@ model WasteAlert {
   pickupAddress   String      @db.Text
   pickupLatitude  Float
   pickupLongitude Float
+  pickupTimeSlot  String?     // ADDED: Field for preferred pickup time slot
   createdById     String
   createdBy       User        @relation("AlertsCreatedByUser", fields: [createdById], references: [id])
   claimedById     String?
@@ -115,9 +109,19 @@ model WasteAlert {
   review          Review?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  rejectedBy      AlertRejection[]
 }
 
-// Tracks the history of status changes for a WasteAlert.
+model AlertRejection {
+    id String @id @default(cuid())
+    alertId String
+    alert WasteAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+    collectorId String
+    collector CollectorProfile @relation(fields: [collectorId], references: [id], onDelete: Cascade)
+    createdAt DateTime @default(now())
+    @@unique([alertId, collectorId])
+}
+
 model StatusLog {
   id        String      @id @default(cuid())
   alertId   String
@@ -127,7 +131,6 @@ model StatusLog {
   notes     String?     @db.Text
 }
 
-// Model for users to review collectors after a pickup is completed.
 model Review {
   id          String           @id @default(cuid())
   rating      Int

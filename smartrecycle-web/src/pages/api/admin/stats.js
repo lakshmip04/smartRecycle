@@ -3,14 +3,17 @@ const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
     return res.status(405).end();
   }
-  // In a real app, you'd add admin role verification here
+  
   try {
+    // In a real app, you would add admin role verification here for security.
+    
     const totalUsers = await prisma.user.count({ where: { role: 'HOUSEHOLD' } });
     const totalCollectors = await prisma.user.count({ where: { role: 'COLLECTOR' } });
     const materialsCollected = await prisma.wasteAlert.count({ where: { status: 'COMPLETED' } });
-    // This is a simplified weight calculation
+    
     const totalWeightResult = await prisma.wasteAlert.aggregate({
       _sum: { weightEstimate: true },
       where: { status: 'COMPLETED' },
@@ -23,6 +26,7 @@ export default async function handler(req, res) {
       totalWeight: totalWeightResult._sum.weightEstimate || 0,
     });
   } catch (error) {
+    console.error("Error in /api/admin/stats:", error);
     res.status(500).json({ message: 'Failed to fetch stats' });
   }
 }

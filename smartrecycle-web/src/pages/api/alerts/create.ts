@@ -18,6 +18,7 @@ NOTE: For this test, you first need to register/login a HOUSEHOLD user
     "pickupAddress": "123, 4th Main, Indiranagar, Bengaluru, Karnataka 560038",
     "pickupLatitude": 12.97194,
     "pickupLongitude": 77.6411,
+    "pickupTimeSlot": "9am-12pm",
     "createdById": "clz..." // <-- PASTE THE USER ID OF THE LOGGED-IN HOUSEHOLD USER HERE
 }
 
@@ -46,17 +47,16 @@ export default async function handler(
       pickupAddress,
       pickupLatitude,
       pickupLongitude,
-      createdById, // The ID of the logged-in household user
+      createdById,
+      pickupTimeSlot, // ADDED: Get the time slot from the request
     } = req.body;
 
     // --- 1. Input Validation ---
-    if (!wasteType || !pickupAddress || !pickupLatitude || !pickupLongitude || !createdById) {
-      return res.status(400).json({ message: 'Missing required fields: wasteType, pickupAddress, coordinates, and createdById are required.' });
+    if (!wasteType || !pickupAddress || !pickupLatitude || !pickupLongitude || !createdById || !pickupTimeSlot) {
+      return res.status(400).json({ message: 'Missing required fields: wasteType, pickupAddress, coordinates, time slot, and createdById are required.' });
     }
 
     // --- 2. Verify the User ---
-    // Check if the user exists and is a household user.
-    // In a real app, you would get the user ID from a decoded JWT token, not the request body.
     const user = await prisma.user.findUnique({
       where: { id: createdById },
     });
@@ -77,7 +77,8 @@ export default async function handler(
           pickupAddress,
           pickupLatitude,
           pickupLongitude,
-          createdById: user.id, // Associate it with the validated user
+          createdById: user.id,
+          pickupTimeSlot, // ADDED: Save the time slot to the database
         },
       });
 

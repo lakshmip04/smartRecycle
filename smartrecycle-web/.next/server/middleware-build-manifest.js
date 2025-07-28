@@ -29,10 +29,10 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/collector-dashboard.js"
     ],
-    "/register": [
+    "/user-dashboard": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/register.js"
+      "static/chunks/pages/user-dashboard.js"
     ]
   },
   "ampFirstPages": []

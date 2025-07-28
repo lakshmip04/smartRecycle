@@ -16,11 +16,11 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
-  Button // Added for logout button
+  Button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  ExitToApp as LogoutIcon, // Added for logout button
+  ExitToApp as LogoutIcon,
   Nature
 } from '@mui/icons-material';
 
@@ -42,13 +42,6 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
       router.push('/'); // If no user, redirect to login
     }
   }, [router]);
-
-  const handleNavigation = (path) => {
-    router.push(path);
-    if (isMobile) {
-      setMobileOpen(false);
-    }
-  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -73,7 +66,17 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
         {navItems && navItems.map((item) => (
           <ListItem key={item.name} disablePadding>
             <ListItemButton 
-              onClick={() => handleNavigation(item.path)}
+              // FIXED: This now correctly handles both path-based and onClick-based navigation
+              onClick={() => {
+                if (item.path) {
+                    router.push(item.path);
+                } else if (item.onClick) {
+                    item.onClick();
+                }
+                if (isMobile) {
+                    setMobileOpen(false);
+                }
+              }}
               selected={router.pathname === item.path}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>

@@ -31,13 +31,15 @@ import {
   Map as MapIcon,
   SmartToy as ChatbotIcon,
   Nature as EcoIcon,
-  Person as PersonIcon // Added for profile link
+  Person as PersonIcon,
+  Upload as UploadIcon // Added for the upload button
 } from '@mui/icons-material';
 // --- Import your actual components ---
-import DashboardLayout from '../components/DashboardLayout'; // Import the main layout
+import DashboardLayout from '../components/DashboardLayout';
 import AlertCard from '../components/AlertCard'; 
 import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
+import { supabase } from '../lib/supabaseClient'; // Import the Supabase client
 
 // Dynamically import the map component to prevent server-side rendering errors
 const WasteCollectorMapWithNoSSR = dynamic(
@@ -76,6 +78,7 @@ export default function UserDashboard() {
     weightEstimate: '',
     pickupAddress: '',
   });
+  const [imageFile, setImageFile] = useState(null); // State for the image file
 
   // Define the navigation items specific to the User
   const userNavItems = [
@@ -115,14 +118,45 @@ export default function UserDashboard() {
     }
   }, [router]);
 
+  const handleFileChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+        setImageFile(event.target.files[0]);
+    }
+  };
+
   const handleCreateAlert = async () => {
     if (!newAlertData.wasteType || !newAlertData.weightEstimate || !newAlertData.pickupAddress) {
         setError('Please fill all required fields in the form.');
         return;
     }
     setError('');
+    setLoading(true);
+
+    let imageUrl = '';
+    // --- Step 1: Handle File Upload if an image is selected ---
+    if (imageFile) {
+        try {
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+            const filePath = `public/${fileName}`;
+
+            let { error: uploadError } = await supabase.storage
+                .from('waste-images') // The name of your new storage bucket
+                .upload(filePath, imageFile);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage.from('waste-images').getPublicUrl(filePath);
+            if (!data.publicUrl) throw new Error("Could not get public URL for the image.");
+            
+            imageUrl = data.publicUrl;
+        } catch (uploadError) {
+            setError(`Image Upload Failed: ${uploadError.message}`);
+            setLoading(false);
+            return;
+        }
+    }
     
-    // In a real app, you'd get lat/lng from the address via a geocoding API
     const placeholderCoords = { lat: 12.9716, lng: 77.5946 };
 
     try {
@@ -135,6 +169,7 @@ export default function UserDashboard() {
                 createdById: user.id,
                 pickupLatitude: placeholderCoords.lat,
                 pickupLongitude: placeholderCoords.lng,
+                imageUrl: imageUrl, // Add the image URL to the payload
             }),
         });
 
@@ -149,36 +184,31 @@ export default function UserDashboard() {
                 weightEstimate: '',
                 pickupAddress: '',
             });
+            setImageFile(null); // Reset the image file state
         } else {
             setError(result.message || 'Failed to create alert.');
         }
     } catch (err) {
         setError('Could not connect to the server.');
+    } finally {
+        setLoading(false);
     }
   };
 
-  // This function is called by the WasteClassifier component when it has a result
   const handleClassificationComplete = (classificationData) => {
-    // Pre-fill the new alert form with data from the AI
     setNewAlertData(prev => ({
         ...prev,
         description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
         wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
     }));
-    // Open the dialog so the user can complete and post the alert
     setOpenDialog(true);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (loading && !user) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
   }
 
   return (
-    // The entire page is now wrapped in the DashboardLayout
     <DashboardLayout navItems={userNavItems} pageTitle="User Dashboard">
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" gutterBottom>
@@ -210,38 +240,24 @@ export default function UserDashboard() {
 
             <TabPanel value={activeTab} index={0}>
               <Typography variant="h6" gutterBottom>My Waste Alerts</Typography>
-              {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+              {loading ? <CircularProgress /> : error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
               <Stack spacing={2}>
                 {wasteAlerts.length > 0 ? (
                   wasteAlerts.map((alert) => (
                     <AlertCard key={alert.id} alert={alert} />
                   ))
                 ) : (
-                  <Typography color="textSecondary">No waste alerts posted yet.</Typography>
+                  !loading && <Typography color="textSecondary">No waste alerts posted yet.</Typography>
                 )}
               </Stack>
             </TabPanel>
-
-            <TabPanel value={activeTab} index={1}>
-                <WasteClassifier onClassificationComplete={handleClassificationComplete} />
-            </TabPanel>
-
-            <TabPanel value={activeTab} index={2}>
-                <WasteCollectorMapWithNoSSR />
-            </TabPanel>
-
-            <TabPanel value={activeTab} index={3}>
-                <RecycleRecommendationChatbot />
-            </TabPanel>
+            <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
+            <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
+            <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot /></TabPanel>
           </CardContent>
         </Card>
 
-        <Fab
-          color="primary"
-          aria-label="Create new alert"
-          sx={{ position: 'fixed', bottom: 32, right: 32 }}
-          onClick={() => setOpenDialog(true)}
-        >
+        <Fab color="primary" aria-label="Create new alert" sx={{ position: 'fixed', bottom: 32, right: 32 }} onClick={() => setOpenDialog(true)}>
           <AddIcon />
         </Fab>
 
@@ -252,11 +268,7 @@ export default function UserDashboard() {
               <Grid item xs={12}>
                 <FormControl fullWidth>
                   <InputLabel>Waste Type</InputLabel>
-                  <Select
-                    value={newAlertData.wasteType}
-                    onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })}
-                    label="Waste Type"
-                  >
+                  <Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type">
                     <MenuItem value="GENERAL">General</MenuItem>
                     <MenuItem value="RECYCLABLE">Recyclable</MenuItem>
                     <MenuItem value="E_WASTE">E-Waste</MenuItem>
@@ -265,20 +277,20 @@ export default function UserDashboard() {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={12}><TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
+              <Grid item xs={12}><TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
+              <Grid item xs={12}><TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
               <Grid item xs={12}>
-                <TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} />
+                <Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>
+                    {imageFile ? `Selected: ${imageFile.name}` : 'Upload Image (Optional)'}
+                    <input type="file" hidden onChange={handleFileChange} accept="image/*" />
+                </Button>
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button onClick={handleCreateAlert} variant="contained">Create Alert</Button>
+            <Button onClick={handleCreateAlert} variant="contained" disabled={loading}>{loading ? <CircularProgress size={24} /> : 'Create Alert'}</Button>
           </DialogActions>
         </Dialog>
     </DashboardLayout>

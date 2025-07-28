@@ -17,7 +17,7 @@ import {
   IconButton,
   CircularProgress,
   Alert,
-  Snackbar, // Added for success/error notifications
+  Snackbar,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -27,7 +27,7 @@ import {
   Delete as DeleteIcon,
   Check as CheckIcon,
 } from '@mui/icons-material';
-import DashboardLayout from '../components/DashboardLayout'; // Import the main layout
+import DashboardLayout from '../components/DashboardLayout';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -36,7 +36,6 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // State for data fetched from the backend
   const [systemStats, setSystemStats] = useState({});
   const [users, setUsers] = useState([]);
   const [collectors, setCollectors] = useState([]);
@@ -49,17 +48,19 @@ export default function AdminDashboard() {
   ];
 
   useEffect(() => {
+    // --- Stricter Authentication Check ---
+    const storedUserData = localStorage.getItem('user_data');
+    if (!storedUserData || JSON.parse(storedUserData).role !== 'ADMIN') {
+        // If user is not an admin, show error and redirect
+        setError('Access Denied. You must be an admin to view this page.');
+        setLoading(false);
+        setTimeout(() => router.push('/'), 3000); // Redirect to login after 3 seconds
+        return; // Stop further execution
+    }
+
     const fetchData = async () => {
-      setLoading(true);
       setError('');
       try {
-        // In a real app, you would verify the user is an admin first from localStorage
-        const storedUserData = localStorage.getItem('user_data');
-        if (!storedUserData || JSON.parse(storedUserData).role !== 'ADMIN') {
-            // For now, we'll allow it for testing, but in production you'd throw an error.
-            console.warn("Accessing admin dashboard without admin role.");
-        }
-
         const [statsRes, usersRes, collectorsRes] = await Promise.all([
           fetch('/api/admin/stats'),
           fetch('/api/admin/users'),
@@ -86,7 +87,7 @@ export default function AdminDashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [router]);
 
   const handleApprove = async (collectorId) => {
     try {
@@ -97,7 +98,6 @@ export default function AdminDashboard() {
             const result = await response.json();
             throw new Error(result.message || 'Failed to approve collector.');
         }
-        // Remove the collector from the pending list in the UI
         setCollectors(prev => prev.filter(c => c.id !== collectorId));
         setSnackbar({ open: true, message: 'Collector approved!', severity: 'success' });
     } catch (err) {
@@ -106,7 +106,6 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (type, userId) => {
-    // We use a simple confirm dialog for this destructive action
     if (window.confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) {
         try {
             const response = await fetch(`/api/admin/users/${userId}`, {
@@ -116,7 +115,6 @@ export default function AdminDashboard() {
                 const result = await response.json();
                 throw new Error(result.message || 'Failed to delete user.');
             }
-            // Remove the user from the appropriate list in the UI
             if (type === 'user') {
                 setUsers(prev => prev.filter(u => u.id !== userId));
             } else {
@@ -205,16 +203,12 @@ export default function AdminDashboard() {
     }
   };
 
-  // A custom onClick handler for the nav items to switch tabs instead of navigating
   const handleTabClick = (tabKey) => {
-      // Since the nav items are not real pages, we just set the active tab state
-      // instead of using router.push
       setActiveTab(tabKey);
   };
 
   return (
     <DashboardLayout 
-        // We pass the custom onClick handler to the layout
         navItems={adminNavItems.map(item => ({...item, path: undefined, onClick: () => handleTabClick(item.key)}))} 
         pageTitle="Admin Dashboard"
     >

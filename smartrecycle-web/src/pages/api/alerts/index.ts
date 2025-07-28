@@ -31,7 +31,6 @@ export default async function handler(
 
   try {
     // --- 1. Authentication (Now Mandatory) ---
-    // We require the collector's ID to know which alerts to show them.
     const collectorId = req.headers['x-user-id'] as string;
 
     if (!collectorId) {
@@ -42,26 +41,36 @@ export default async function handler(
     const collectorProfile = await prisma.collectorProfile.findUnique({
       where: { userId: collectorId },
       select: {
-        acceptedWasteTypes: true, // We only need the list of accepted types
+        id: true, // Get the profile ID for the rejection query
+        acceptedWasteTypes: true,
         user: {
-            select: { role: true } // Also get the user role for validation
+            select: { role: true }
         }
       },
     });
 
-    // Validate that the user is indeed a collector
     if (!collectorProfile || collectorProfile.user?.role !== 'COLLECTOR') {
       return res.status(403).json({ message: 'Forbidden. User is not a valid collector.' });
     }
 
-    // --- 3. Fetch Filtered Pending Alerts ---
-    // Now, the query filters by status AND the collector's specific accepted waste types.
+    // --- 3. Get a list of alert IDs that this collector has already rejected ---
+    const rejectedAlertIds = await prisma.alertRejection.findMany({
+        where: { collectorId: collectorProfile.id },
+        select: { alertId: true },
+    }).then(rejections => rejections.map(r => r.alertId));
+
+
+    // --- 4. Fetch Filtered Pending Alerts ---
     const pendingAlerts = await prisma.wasteAlert.findMany({
       where: {
         status: 'PENDING',
         wasteType: {
-          in: collectorProfile.acceptedWasteTypes, // The magic happens here!
+          in: collectorProfile.acceptedWasteTypes,
         },
+        // ADDED: This filter excludes the alerts the collector has rejected
+        id: {
+            notIn: rejectedAlertIds,
+        }
       },
       orderBy: {
         createdAt: 'asc',
@@ -79,7 +88,7 @@ export default async function handler(
       },
     });
 
-    // --- 4. Return Success Response ---
+    // --- 5. Return Success Response ---
     return res.status(200).json({ alerts: pendingAlerts });
 
   } catch (error: any) {

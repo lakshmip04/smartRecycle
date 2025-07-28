@@ -9,6 +9,8 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  ToggleButtonGroup, // Added for role selector
+  ToggleButton,      // Added for role selector
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -18,6 +20,7 @@ import { loadFull } from 'tsparticles';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('HOUSEHOLD'); // Added state for role selection
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fadeOut, setFadeOut] = useState(false);
@@ -32,13 +35,13 @@ export default function LoginPage() {
   const getRedirectPath = (userRole) => {
     switch (userRole) {
       case 'ADMIN':
-        return '/admin-dashboard'; // Or wherever your admin page is
+        return '/admin-dashboard';
       case 'HOUSEHOLD':
-        return '/user-dashboard'; // Or wherever your household user page is
+        return '/user-dashboard';
       case 'COLLECTOR':
-        return '/collector-dashboard'; // Or wherever your collector page is
+        return '/collector-dashboard';
       default:
-        return '/'; // Fallback to homepage
+        return '/';
     }
   };
 
@@ -64,8 +67,9 @@ export default function LoginPage() {
         // Login was successful
         console.log('Login successful:', data.user);
         
-        // Store user data in localStorage to persist login state
+        // Store user data and selected role in localStorage
         localStorage.setItem('user_data', JSON.stringify(data.user));
+        localStorage.setItem('selected_role', role); // Store the selected role
         
         // Trigger the success animation and redirect
         setFadeOut(true);
@@ -75,18 +79,17 @@ export default function LoginPage() {
         }, 800);
 
       } else {
-        // Handle errors from the API (e.g., wrong password, user not found)
+        // Handle errors from the API
         setError(data.message || 'An error occurred during login.');
         setLoading(false);
       }
     } catch (err) {
-      // Handle network errors or other exceptions
+      // Handle network errors
       setError('Could not connect to the server. Please try again later.');
       setLoading(false);
     }
   };
 
-  // The JSX for your UI remains largely the same
   return (
     <Box sx={{ minHeight: '100vh', overflow: 'hidden', position: 'relative' }}>
       <Particles
@@ -154,6 +157,19 @@ export default function LoginPage() {
                     </Alert>
                   )}
 
+                  {/* MODIFIED: Added Role Selector */}
+                  <ToggleButtonGroup
+                    color="primary"
+                    value={role}
+                    exclusive
+                    onChange={(e, newRole) => { if (newRole) setRole(newRole);}}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  >
+                    <ToggleButton value="HOUSEHOLD">👤 User</ToggleButton>
+                    <ToggleButton value="COLLECTOR">🚛 Collector</ToggleButton>
+                  </ToggleButtonGroup>
+
                   <TextField
                     fullWidth
                     label="Email Address"
@@ -196,7 +212,7 @@ export default function LoginPage() {
                     fullWidth
                     variant="outlined"
                     size="large"
-                    onClick={() => router.push('/register')} // Use router.push for navigation
+                    onClick={() => router.push('/register')}
                     sx={{
                       py: 1.5,
                       borderColor: '#4CAF50',
