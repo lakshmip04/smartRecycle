@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import {
   Box,
@@ -26,8 +26,16 @@ import {
   LocationOn,
   Person,
   LocalShipping,
-  ArrowBack
+  ArrowBack,
+  BusinessCenter as JobsIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import Particles from 'react-tsparticles';
+import { loadFull } from 'tsparticles';
+
+// --- Import your existing components ---
+import DashboardLayout from '../components/DashboardLayout';
 
 // This component will display a single claimed job
 const CollectionCard = ({ item, handleStatusUpdate }) => {
@@ -100,6 +108,17 @@ export default function CollectorHistoryPage() {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, item: null, newStatus: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  // --- Navigation Items for Collector ---
+  const navItems = [
+    { name: 'Available Jobs', path: '/collector-dashboard', icon: <JobsIcon /> },
+    { name: 'Collection History', path: '/collector-history', icon: <HistoryIcon /> },
+    { name: 'My Profile', path: '/profile', icon: <Person /> },
+  ];
+
+  const particlesInit = async (main) => {
+    await loadFull(main);
+  };
+
   useEffect(() => {
     const storedUserData = localStorage.getItem('user_data');
     if (!storedUserData) {
@@ -164,11 +183,37 @@ export default function CollectorHistoryPage() {
   }
 
   return (
-    <Box sx={{ p: 3, bgcolor: 'grey.100', minHeight: '100vh' }}>
-        <Button startIcon={<ArrowBack />} onClick={() => router.push('/collector-dashboard')} sx={{ mb: 2 }}>
-            Back to Dashboard
-        </Button>
-        <Typography variant="h4" gutterBottom fontWeight="bold">My Collections</Typography>
+    <Box sx={{ minHeight: '100vh', overflow: 'hidden', position: 'relative', background: '#e9f5ec' }}>
+      <Particles
+        id="tsparticles"
+        init={particlesInit}
+        options={{
+          background: { color: { value: '#ffffff00' } },
+          fpsLimit: 60,
+          interactivity: { events: { onHover: { enable: true, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } },
+          particles: {
+            color: { value: '#4CAF50' },
+            links: { enable: true, color: '#4CAF50', distance: 150 },
+            move: { enable: true, speed: 1.5 },
+            size: { value: { min: 1, max: 3 } },
+            number: { value: 60 },
+            opacity: { value: 0.3, animation: { enable: false } },
+            life: { duration: { sync: false, value: 0 } }
+          }
+        }}
+        style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }}
+      />
+
+      <DashboardLayout navItems={navItems} pageTitle="Collection History">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          style={{ position: 'relative', zIndex: 1 }}
+        >
+          <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 3 }}>
+            My Collections
+          </Typography>
         
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -209,6 +254,8 @@ export default function CollectorHistoryPage() {
         <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
             <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
         </Snackbar>
+        </motion.div>
+      </DashboardLayout>
     </Box>
   );
 }

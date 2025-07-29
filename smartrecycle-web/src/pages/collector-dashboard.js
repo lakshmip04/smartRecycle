@@ -35,6 +35,7 @@ import {
   Map as MapIcon,
   Close as RejectIcon,
   BusinessCenter as JobsIcon, // Icon for jobs
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -123,6 +124,7 @@ export default function CollectorDashboardPage() {
   // --- Navigation Items for Collector ---
   const collectorNavItems = [
     { name: 'Available Jobs', path: '/collector-dashboard', icon: <JobsIcon /> },
+    { name: 'Collection History', path: '/collector-history', icon: <HistoryIcon /> },
     { name: 'My Profile', path: '/profile', icon: <Person /> },
   ];
 
@@ -216,7 +218,15 @@ export default function CollectorDashboardPage() {
           background: { color: { value: '#ffffff00' } },
           fpsLimit: 60,
           interactivity: { events: { onHover: { enable: true, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } },
-          particles: { color: { value: '#4CAF50' }, links: { enable: true, color: '#4CAF50', distance: 150 }, move: { enable: true, speed: 1.5 }, size: { value: { min: 1, max: 3 } }, number: { value: 60 } }
+          particles: { 
+            color: { value: '#4CAF50' }, 
+            links: { enable: true, color: '#4CAF50', distance: 150 }, 
+            move: { enable: true, speed: 1.5 }, 
+            size: { value: { min: 1, max: 3 } }, 
+            number: { value: 60 },
+            opacity: { value: 0.3, animation: { enable: false } },
+            life: { duration: { sync: false, value: 0 } }
+          }
         }}
         style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }}
       />
