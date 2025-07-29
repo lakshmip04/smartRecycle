@@ -22,6 +22,8 @@ import {
   CircularProgress,
   Alert,
   Paper, // Using Paper for the styled card effect
+  Avatar,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,6 +33,12 @@ import {
   Nature as EcoIcon,
   Person as PersonIcon,
   Upload as UploadIcon,
+  Book as GuideIcon,
+  RemoveCircleOutline,
+  Block,
+  ShoppingCart,
+  Recycling,
+  Devices,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -42,6 +50,40 @@ import AlertCard from '../components/AlertCard';
 import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
 import { supabase } from '../lib/supabaseClient';
+
+// --- Guide data ---
+const guideSteps = [
+  {
+    icon: <RemoveCircleOutline />,
+    title: 'Reduce',
+    description: 'Limit the use of disposable products. Bring your own shopping bags, a reusable water bottle, and avoid plastic cutlery.',
+    color: '#D32F2F', // Red family
+  },
+  {
+    icon: <Block />,
+    title: 'Refuse',
+    description: 'Avoid accepting products or packaging that are not environmentally friendly. Refuse plastic straws, freebies, and items with excessive packaging.',
+    color: '#FFC107', // Amber family
+  },
+  {
+    icon: <ShoppingCart />,
+    title: 'Buy in Bulk',
+    description: 'Purchasing items in larger quantities to reduce packaging waste. Buying bulk food from local sources helps minimize plastic or paper waste.',
+    color: '#0288D1', // Blue family
+  },
+  {
+    icon: <Recycling />,
+    title: 'Recycling',
+    description: 'Processing waste materials to create new products. Recycling paper, plastic, glass, and metal helps conserve natural resources and reduces landfill waste.',
+    color: '#388E3C', // Green family
+  },
+  {
+    icon: <Devices />,
+    title: 'Digitalization',
+    description: 'Reducing the use of paper by storing and sharing documents digitally. Example: Using e-books, online bills, or digital notes instead of printed versions.',
+    color: '#512DA8', // Purple family
+  },
+];
 
 const WasteCollectorMapWithNoSSR = dynamic(
   () => import('../components/WasteCollectorMap'),
@@ -221,7 +263,26 @@ export default function UserDashboard() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', overflow: 'hidden', position: 'relative', background: '#e9f5ec' }}>
+    <Box sx={{
+      minHeight: '100vh',
+      overflow: 'hidden',
+      position: 'relative',
+      background: '#e9f5ec',
+      '@keyframes pulse': {
+        '0%': {
+          transform: 'scale(1)',
+          opacity: 1,
+        },
+        '50%': {
+          transform: 'scale(1.2)',
+          opacity: 0.7,
+        },
+        '100%': {
+          transform: 'scale(1)',
+          opacity: 1,
+        },
+      },
+    }}>
       <Particles
         id="tsparticles"
         init={particlesInit}
@@ -275,6 +336,7 @@ export default function UserDashboard() {
               <Tab label="AI Waste Classifier" icon={<AnalyticsIcon />} iconPosition="start" />
               <Tab label="Find Collectors" icon={<MapIcon />} iconPosition="start" />
               <Tab label="3R Chatbot" icon={<ChatbotIcon />} iconPosition="start" />
+              <Tab label="Waste Guide" icon={<GuideIcon />} iconPosition="start" />
             </Tabs>
 
             <TabPanel value={activeTab} index={0}>
@@ -290,6 +352,94 @@ export default function UserDashboard() {
             <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
             <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
             <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot /></TabPanel>
+                        <TabPanel value={activeTab} index={4}>
+              <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 2 }}>
+                Waste Reduction Guide
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                Follow these key principles to reduce your environmental footprint.
+              </Typography>
+              
+              <Grid container spacing={3}>
+                {guideSteps.map((step, index) => (
+                  <Grid item xs={12} key={index}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                    >
+                      <StyledPaper
+                        sx={{
+                          p: 3,
+                          border: '1px solid #e0e0e0',
+                          '&:hover': {
+                            borderColor: '#4CAF50',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                            transition: 'all 0.2s ease'
+                          }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                          <Avatar 
+                            sx={{ 
+                              bgcolor: '#4CAF50', 
+                              width: 56, 
+                              height: 56,
+                              color: 'white'
+                            }}
+                          >
+                            {step.icon}
+                          </Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography 
+                              variant="h6" 
+                              component="h3" 
+                              sx={{ 
+                                fontWeight: 'bold', 
+                                color: '#2E7D32',
+                                mb: 1
+                              }}
+                            >
+                              {step.title}
+                            </Typography>
+                            <Typography 
+                              variant="body1" 
+                              color="text.secondary"
+                              sx={{ 
+                                lineHeight: 1.6
+                              }}
+                            >
+                              {step.description}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </StyledPaper>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
+              
+              <StyledPaper sx={{ mt: 4, p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 2 }}>
+                  Ready to get started?
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Create your first waste alert and start making a difference today.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => setActiveTab(0)}
+                  sx={{ 
+                    bgcolor: '#4CAF50',
+                    '&:hover': {
+                      bgcolor: '#2E7D32'
+                    }
+                  }}
+                >
+                  Create Alert
+                </Button>
+              </StyledPaper>
+            </TabPanel>
           </StyledPaper>
 
           <Fab sx={{ position: 'fixed', bottom: 32, right: 32, backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }} aria-label="Create new alert" onClick={() => setOpenDialog(true)}>
