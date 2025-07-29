@@ -32,16 +32,14 @@ import {
   SmartToy as ChatbotIcon,
   Nature as EcoIcon,
   Person as PersonIcon,
-  Upload as UploadIcon // Added for the upload button
+  Upload as UploadIcon
 } from '@mui/icons-material';
-// --- Import your actual components ---
 import DashboardLayout from '../components/DashboardLayout';
 import AlertCard from '../components/AlertCard'; 
 import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
-import { supabase } from '../lib/supabaseClient'; // Import the Supabase client
+import { supabase } from '../lib/supabaseClient';
 
-// Dynamically import the map component to prevent server-side rendering errors
 const WasteCollectorMapWithNoSSR = dynamic(
   () => import('../components/WasteCollectorMap'),
   { 
@@ -50,7 +48,6 @@ const WasteCollectorMapWithNoSSR = dynamic(
   }
 );
 
-// A helper component to render the content of each tab
 const TabPanel = ({ children, value, index }) => (
   <div role="tabpanel" hidden={value !== index}>
     {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
@@ -61,26 +58,22 @@ const TabPanel = ({ children, value, index }) => (
 export default function UserDashboard() {
   const router = useRouter();
   
-  // State for UI
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState(0);
-
-  // State for logged-in user and their data
   const [user, setUser] = useState(null);
   const [wasteAlerts, setWasteAlerts] = useState([]);
 
-  // State for the "Create Alert" dialog
   const [openDialog, setOpenDialog] = useState(false);
   const [newAlertData, setNewAlertData] = useState({
     wasteType: 'GENERAL',
     description: '',
     weightEstimate: '',
     pickupAddress: '',
+    pickupTimeSlot: '',
   });
-  const [imageFile, setImageFile] = useState(null); // State for the image file
+  const [imageFile, setImageFile] = useState(null);
 
-  // Define the navigation items specific to the User
   const userNavItems = [
     { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
     { name: 'My Profile', path: '/profile', icon: <PersonIcon /> },
@@ -88,15 +81,17 @@ export default function UserDashboard() {
 
   useEffect(() => {
     const storedUserData = localStorage.getItem('user_data');
-    if (!storedUserData) {
+    if (storedUserData) {
+      const parsedUser = JSON.parse(storedUserData);
+      setUser(parsedUser);
+    } else {
       router.push('/');
-      return;
     }
+  }, [router]);
 
-    const parsedUser = JSON.parse(storedUserData);
-    setUser(parsedUser);
-
+  useEffect(() => {
     const fetchAlerts = async (userId) => {
+      setLoading(true);
       try {
         const response = await fetch(`/api/users/${userId}/alerts`);
         if (!response.ok) {
@@ -111,12 +106,12 @@ export default function UserDashboard() {
       }
     };
 
-    if (parsedUser?.id) {
-        fetchAlerts(parsedUser.id);
+    if (user?.id) {
+        fetchAlerts(user.id);
     } else {
         setLoading(false);
     }
-  }, [router]);
+  }, [user]);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files[0]) {
@@ -125,30 +120,24 @@ export default function UserDashboard() {
   };
 
   const handleCreateAlert = async () => {
-    if (!newAlertData.wasteType || !newAlertData.weightEstimate || !newAlertData.pickupAddress) {
-        setError('Please fill all required fields in the form.');
+    // FIXED: Added pickupTimeSlot to the validation check
+    if (!newAlertData.wasteType || !newAlertData.weightEstimate || !newAlertData.pickupAddress || !newAlertData.pickupTimeSlot) {
+        setError('Please fill all required fields, including the time slot.');
         return;
     }
     setError('');
     setLoading(true);
 
     let imageUrl = '';
-    // --- Step 1: Handle File Upload if an image is selected ---
     if (imageFile) {
         try {
             const fileExt = imageFile.name.split('.').pop();
             const fileName = `${user.id}-${Date.now()}.${fileExt}`;
             const filePath = `public/${fileName}`;
-
-            let { error: uploadError } = await supabase.storage
-                .from('waste-images') // The name of your new storage bucket
-                .upload(filePath, imageFile);
-
+            let { error: uploadError } = await supabase.storage.from('waste-images').upload(filePath, imageFile);
             if (uploadError) throw uploadError;
-
             const { data } = supabase.storage.from('waste-images').getPublicUrl(filePath);
             if (!data.publicUrl) throw new Error("Could not get public URL for the image.");
-            
             imageUrl = data.publicUrl;
         } catch (uploadError) {
             setError(`Image Upload Failed: ${uploadError.message}`);
@@ -169,7 +158,7 @@ export default function UserDashboard() {
                 createdById: user.id,
                 pickupLatitude: placeholderCoords.lat,
                 pickupLongitude: placeholderCoords.lng,
-                imageUrl: imageUrl, // Add the image URL to the payload
+                imageUrl: imageUrl,
             }),
         });
 
@@ -183,8 +172,9 @@ export default function UserDashboard() {
                 description: '',
                 weightEstimate: '',
                 pickupAddress: '',
+                pickupTimeSlot: '',
             });
-            setImageFile(null); // Reset the image file state
+            setImageFile(null);
         } else {
             setError(result.message || 'Failed to create alert.');
         }
@@ -264,8 +254,9 @@ export default function UserDashboard() {
         <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Post New Waste Alert</DialogTitle>
           <DialogContent>
+            {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Waste Type</InputLabel>
                   <Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type">
@@ -277,9 +268,25 @@ export default function UserDashboard() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12}><TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
-              <Grid item xs={12}><TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
-              <Grid item xs={12}><TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} />
+              </Grid>
+              <Grid item xs={12}>
+                 <FormControl fullWidth>
+                  <InputLabel>Preferred Pickup Time Slot</InputLabel>
+                  <Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label="Preferred Pickup Time Slot">
+                    <MenuItem value="9am-12pm">Morning (9 AM - 12 PM)</MenuItem>
+                    <MenuItem value="12pm-3pm">Afternoon (12 PM - 3 PM)</MenuItem>
+                    <MenuItem value="3pm-6pm">Evening (3 PM - 6 PM)</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} />
+              </Grid>
               <Grid item xs={12}>
                 <Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>
                     {imageFile ? `Selected: ${imageFile.name}` : 'Upload Image (Optional)'}
