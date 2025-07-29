@@ -30,6 +30,7 @@ local.properties
 *.iml
 *.hprof
 
+smartrecycle-web/.next
 # node.js
 #
 node_modules/

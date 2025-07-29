@@ -46,7 +46,7 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
-  
+
   const handleLogout = () => {
     localStorage.clear();
     router.push('/');
@@ -54,32 +54,35 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Nature sx={{ color: 'primary.main' }} />
-        <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-          SmartRecycle
+      {/* --- STYLED TOOLBAR --- */}
+      <Toolbar sx={{ background: '#4CAF50', color: 'white' }}>
+        <Nature sx={{ mr: 1.5 }} />
+        <Typography variant="h6" noWrap>
+          EcoDrop
         </Typography>
-      </Box>
+      </Toolbar>
       <Divider />
       <List>
-        {/* The navItems are now passed in as a prop */}
         {navItems && navItems.map((item) => (
           <ListItem key={item.name} disablePadding>
-            <ListItemButton 
-              // FIXED: This now correctly handles both path-based and onClick-based navigation
+            <ListItemButton
               onClick={() => {
-                if (item.path) {
-                    router.push(item.path);
-                } else if (item.onClick) {
-                    item.onClick();
-                }
-                if (isMobile) {
-                    setMobileOpen(false);
-                }
+                if (item.path) router.push(item.path);
+                else if (item.onClick) item.onClick();
+                if (isMobile) setMobileOpen(false);
               }}
               selected={router.pathname === item.path}
+              sx={{
+                '&.Mui-selected': {
+                  backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                  '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
+                    color: '#2E7D32',
+                  },
+                },
+              }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
+              {/* --- STYLED ICONS --- */}
+              <ListItemIcon sx={{ color: '#4CAF50' }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.name} />
             </ListItemButton>
           </ListItem>
@@ -88,12 +91,12 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
       <Box sx={{ mt: 'auto', p: 2 }}>
         <Divider sx={{ mb: 2 }} />
         {user && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar sx={{ width: 40, height: 40, bgcolor: '#2E7D32' }}>
               {user.profile?.name?.charAt(0) || 'U'}
             </Avatar>
             <Box>
-              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                 {user.profile?.name}
               </Typography>
               <Typography variant="caption" color="textSecondary">
@@ -110,9 +113,15 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
         position="fixed"
+        elevation={0} // Flatter design
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
+          // --- STYLED APP BAR ---
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(8px)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+          color: '#2E7D32' // Dark green text for contrast
         }}
       >
         <Toolbar>
@@ -125,8 +134,8 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {pageTitle || 'Dashboard'} {/* The pageTitle is now a prop */}
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+            {pageTitle || 'Dashboard'}
           </Typography>
           <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
             Logout
@@ -168,7 +177,8 @@ export default function DashboardLayout({ children, navItems, pageTitle }) {
           flexGrow: 1,
           p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          bgcolor: 'background.default',
+          // --- STYLED BACKGROUND ---
+          bgcolor: '#e9f5ec',
         }}
       >
         <Toolbar />
