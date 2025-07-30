@@ -21,9 +21,10 @@ import {
   Stack,
   CircularProgress,
   Alert,
-  Paper, // Using Paper for the styled card effect
+  Paper,
+  useTheme,
+  useMediaQuery,
   Avatar,
-  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,18 +35,17 @@ import {
   Person as PersonIcon,
   Upload as UploadIcon,
   Book as GuideIcon,
-  RemoveCircleOutline,
-  Block,
-  ShoppingCart,
-  Recycling,
-  Devices,
+  RemoveCircleOutline, // Added missing import
+  Block,               // Added missing import
+  ShoppingCart,        // Added missing import
+  Recycling,           // Added missing import
+  Devices,             // Added missing import
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 
 // --- Import your actual components ---
-import DashboardLayout from '../components/DashboardLayout'; // The existing layout
+import DashboardLayout from '../components/DashboardLayout';
 import AlertCard from '../components/AlertCard';
 import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
@@ -53,36 +53,11 @@ import { supabase } from '../lib/supabaseClient';
 
 // --- Guide data ---
 const guideSteps = [
-  {
-    icon: <RemoveCircleOutline />,
-    title: 'Reduce',
-    description: 'Limit the use of disposable products. Bring your own shopping bags, a reusable water bottle, and avoid plastic cutlery.',
-    color: '#D32F2F', // Red family
-  },
-  {
-    icon: <Block />,
-    title: 'Refuse',
-    description: 'Avoid accepting products or packaging that are not environmentally friendly. Refuse plastic straws, freebies, and items with excessive packaging.',
-    color: '#FFC107', // Amber family
-  },
-  {
-    icon: <ShoppingCart />,
-    title: 'Buy in Bulk',
-    description: 'Purchasing items in larger quantities to reduce packaging waste. Buying bulk food from local sources helps minimize plastic or paper waste.',
-    color: '#0288D1', // Blue family
-  },
-  {
-    icon: <Recycling />,
-    title: 'Recycling',
-    description: 'Processing waste materials to create new products. Recycling paper, plastic, glass, and metal helps conserve natural resources and reduces landfill waste.',
-    color: '#388E3C', // Green family
-  },
-  {
-    icon: <Devices />,
-    title: 'Digitalization',
-    description: 'Reducing the use of paper by storing and sharing documents digitally. Example: Using e-books, online bills, or digital notes instead of printed versions.',
-    color: '#512DA8', // Purple family
-  },
+  { icon: <RemoveCircleOutline />, title: 'Reduce', description: 'Limit disposable products. Opt for reusable bags, bottles, and cutlery.' },
+  { icon: <Block />, title: 'Refuse', description: 'Say no to single-use items like plastic straws and unnecessary packaging.' },
+  { icon: <ShoppingCart />, title: 'Buy in Bulk', description: 'Purchase items in larger quantities to significantly cut down on packaging waste.' },
+  { icon: <Recycling />, title: 'Recycling', description: 'Properly sort and process waste materials to create new products and conserve resources.' },
+  { icon: <Devices />, title: 'Digitalization', description: 'Embrace digital documents and online bills to drastically reduce paper consumption.' },
 ];
 
 const WasteCollectorMapWithNoSSR = dynamic(
@@ -99,7 +74,6 @@ const TabPanel = ({ children, value, index }) => (
   </div>
 );
 
-// --- A reusable styled Paper component to match the login/register style ---
 const StyledPaper = (props) => (
   <Paper
     elevation={4}
@@ -120,6 +94,8 @@ const StyledPaper = (props) => (
 
 export default function UserDashboard() {
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -132,9 +108,9 @@ export default function UserDashboard() {
     description: '',
     weightEstimate: '',
     pickupAddress: '',
-    pickupTimeSlot: '', // Added for time slot
+    pickupTimeSlot: '',
   });
-  const [imageFile, setImageFile] = useState(null); // Added for image file
+  const [imageFile, setImageFile] = useState(null);
 
   const userNavItems = [
     { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
@@ -265,52 +241,33 @@ export default function UserDashboard() {
   }
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      overflow: 'hidden',
-      position: 'relative',
-      background: '#e9f5ec',
-      '@keyframes pulse': {
-        '0%': {
-          transform: 'scale(1)',
-          opacity: 1,
-        },
-        '50%': {
-          transform: 'scale(1.2)',
-          opacity: 0.7,
-        },
-        '100%': {
-          transform: 'scale(1)',
-          opacity: 1,
-        },
-      },
-    }}>
+    <Box sx={{ minHeight: '100vh', overflowX: 'hidden', position: 'relative', background: '#e9f5ec' }} className="transition-all duration-300 ease-in-out">
       <Particles
         id="tsparticles"
         init={particlesInit}
         options={{
           background: { color: { value: '#ffffff00' } },
           fpsLimit: 60,
-          interactivity: { events: { onHover: { enable: true, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } },
+          interactivity: { events: { onHover: { enable: !isMobile, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } },
           particles: {
             color: { value: '#4CAF50' },
-            links: { enable: true, color: '#4CAF50', distance: 150 },
-            move: { enable: true, speed: 1.5 },
-            size: { value: { min: 1, max: 3 } },
-            number: { value: 60 }
+            links: { enable: true, color: '#4CAF50', distance: 120 },
+            move: { enable: true, speed: 1 },
+            size: { value: { min: 1, max: 2.5 } },
+            number: { value: isMobile ? 30 : 60 }
           }
         }}
         style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }}
       />
 
       <DashboardLayout navItems={userNavItems} pageTitle="User Dashboard">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
+        <div style={{ opacity: 1, visibility: 'visible' }} className="animate-fade-in">
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold' }}>
+            <Typography
+              variant={isMobile ? 'h5' : 'h4'}
+              gutterBottom
+              sx={{ color: '#4CAF50', fontWeight: 'bold' }}
+            >
               Welcome back, {user?.profile?.name || 'User'}! 👋
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -318,11 +275,11 @@ export default function UserDashboard() {
             </Typography>
           </Box>
 
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="text.secondary">Total Posts</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="text.secondary">Pending</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="text.secondary">In Progress</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="text.secondary">Completed</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
+          <Grid container spacing={isMobile ? 2 : 3} sx={{ mb: 4 }} className="animate-fade-in">
+            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">Total Posts</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
+            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">Pending</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">In Progress</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">Completed</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
           </Grid>
 
           <StyledPaper>
@@ -334,11 +291,11 @@ export default function UserDashboard() {
               allowScrollButtonsMobile
               sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
-              <Tab label="My Waste Alerts" icon={<EcoIcon />} iconPosition="start" />
-              <Tab label="AI Waste Classifier" icon={<AnalyticsIcon />} iconPosition="start" />
-              <Tab label="Find Collectors" icon={<MapIcon />} iconPosition="start" />
-              <Tab label="3R Chatbot" icon={<ChatbotIcon />} iconPosition="start" />
-              <Tab label="Waste Guide" icon={<GuideIcon />} iconPosition="start" />
+              <Tab label={isMobile ? '' : "Alerts"} icon={<EcoIcon />} />
+              <Tab label={isMobile ? '' : "AI Classifier"} icon={<AnalyticsIcon />} />
+              <Tab label={isMobile ? '' : "Find Collectors"} icon={<MapIcon />} />
+              <Tab label={isMobile ? '' : "3R Chatbot"} icon={<ChatbotIcon />} />
+              <Tab label={isMobile ? '' : "Waste Guide"} icon={<GuideIcon />} />
             </Tabs>
 
             <TabPanel value={activeTab} index={0}>
@@ -354,97 +311,37 @@ export default function UserDashboard() {
             <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
             <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
             <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot /></TabPanel>
-                        <TabPanel value={activeTab} index={4}>
-              <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 2 }}>
-                Waste Reduction Guide
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                Follow these key principles to reduce your environmental footprint.
-              </Typography>
-              
-              <Grid container spacing={3}>
+            <TabPanel value={activeTab} index={4}>
+              <Grid container spacing={3} className="animate-fade-in">
                 {guideSteps.map((step, index) => (
-                  <Grid item xs={12} key={index}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                    >
-                      <StyledPaper
-                        sx={{
-                          p: 3,
-                          border: '1px solid #e0e0e0',
-                          '&:hover': {
-                            borderColor: '#4CAF50',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            transition: 'all 0.2s ease'
-                          }
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
-                          <Avatar 
-                            sx={{ 
-                              bgcolor: '#4CAF50', 
-                              width: 56, 
-                              height: 56,
-                              color: 'white'
-                            }}
-                          >
-                            {step.icon}
-                          </Avatar>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography 
-                              variant="h6" 
-                              component="h3" 
-                              sx={{ 
-                                fontWeight: 'bold', 
-                                color: '#2E7D32',
-                                mb: 1
-                              }}
-                            >
-                              {step.title}
-                            </Typography>
-                            <Typography 
-                              variant="body1" 
-                              color="text.secondary"
-                              sx={{ 
-                                lineHeight: 1.6
-                              }}
-                            >
-                              {step.description}
-                            </Typography>
-                          </Box>
+                  <Grid item xs={12} md={6} key={index}>
+                    <StyledPaper className="hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ color: '#4CAF50' }} className="group-hover:scale-110 transition-transform duration-300">
+                          {React.cloneElement(step.icon, { style: { fontSize: '2.5rem' } })}
                         </Box>
-                      </StyledPaper>
-                    </motion.div>
+                        <Box>
+                          <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold' }} className="group-hover:text-primary-600 transition-colors duration-300">
+                            {step.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {step.description}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </StyledPaper>
                   </Grid>
                 ))}
               </Grid>
-              
-              <StyledPaper sx={{ mt: 4, p: 3, textAlign: 'center' }}>
-                <Typography variant="h6" sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 2 }}>
-                  Ready to get started?
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                  Create your first waste alert and start making a difference today.
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  onClick={() => setActiveTab(0)}
-                  sx={{ 
-                    bgcolor: '#4CAF50',
-                    '&:hover': {
-                      bgcolor: '#2E7D32'
-                    }
-                  }}
-                >
-                  Create Alert
-                </Button>
-              </StyledPaper>
             </TabPanel>
           </StyledPaper>
 
-          <Fab sx={{ position: 'fixed', bottom: 32, right: 32, backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }} aria-label="Create new alert" onClick={() => setOpenDialog(true)}>
+          <Fab
+            sx={{ position: 'fixed', bottom: 16, right: 16, backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}
+            aria-label="Create new alert"
+            onClick={() => setOpenDialog(true)}
+            className="hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-pulse"
+          >
             <AddIcon sx={{ color: 'white' }} />
           </Fab>
 
@@ -465,7 +362,7 @@ export default function UserDashboard() {
               <Button onClick={handleCreateAlert} variant="contained" disabled={loading} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{loading ? <CircularProgress size={24} /> : 'Create Alert'}</Button>
             </DialogActions>
           </Dialog>
-        </motion.div>
+        </div>
       </DashboardLayout>
     </Box>
   );
