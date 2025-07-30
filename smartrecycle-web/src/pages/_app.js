@@ -1,5 +1,6 @@
 // This import at the very top makes the necessary polyfill available application-wide
-import 'regenerator-runtime/runtime';  // Assuming you have a global styles file
+import 'regenerator-runtime/runtime';
+import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }) {
   return <Component {...pageProps} />;
