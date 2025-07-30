@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import {
   Box,
@@ -18,7 +18,9 @@ import {
   Alert,
   Snackbar,
   Tabs,
-  Tab
+  Tab,
+  CardActions,
+  Divider
 } from '@mui/material';
 import {
   Schedule,
@@ -29,16 +31,15 @@ import {
   ArrowBack,
   BusinessCenter as JobsIcon,
   History as HistoryIcon,
+  RestoreFromTrash as UnrejectIcon,
+  Directions as DirectionsIcon, // Added for directions button
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
-
-// --- Import your existing components ---
 import DashboardLayout from '../components/DashboardLayout';
 
-// This component will display a single claimed job
-const CollectionCard = ({ item, handleStatusUpdate }) => {
+const CollectionCard = ({ item, handleStatusUpdate, handleGetDirections }) => {
     const getStatusInfo = (status) => {
         switch (status) {
             case 'CLAIMED': return { text: 'Claimed', color: 'info', icon: <Schedule /> };
@@ -52,63 +53,60 @@ const CollectionCard = ({ item, handleStatusUpdate }) => {
 
     return (
         <Card elevation={2} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <CardMedia
-                component="img"
-                sx={{ height: 140 }}
-                image={item.imageUrl || `https://placehold.co/300x200?text=${item.wasteType}`}
-                alt={item.wasteType}
-            />
+            <CardMedia component="img" sx={{ height: 140 }} image={item.imageUrl || `https://placehold.co/300x200?text=${item.wasteType}`} alt={item.wasteType} />
             <CardContent sx={{ flexGrow: 1 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                    <Typography variant="h6" fontSize="1.1rem" fontWeight="bold">{item.wasteType}</Typography>
-                    <Chip icon={statusInfo.icon} label={statusInfo.text} color={statusInfo.color} size="small" />
-                </Box>
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}><Typography variant="h6" fontSize="1.1rem" fontWeight="bold">{item.wasteType}</Typography><Chip icon={statusInfo.icon} label={statusInfo.text} color={statusInfo.color} size="small" /></Box>
                 <Typography variant="body2" color="textSecondary" mb={1}>{item.description}</Typography>
                 
-                <Box display="flex" alignItems="center" mb={1}>
-                    <LocationOn fontSize="small" color="action" sx={{ mr: 1 }} />
-                    <Typography variant="caption" color="textSecondary">{item.pickupAddress}</Typography>
-                </Box>
-                <Box display="flex" alignItems="center" mb={1}>
-                    <Person fontSize="small" color="action" sx={{ mr: 1 }} />
-                    <Typography variant="caption" color="textSecondary">{item.createdBy?.householdProfile?.name}</Typography>
-                </Box>
+                <Box display="flex" alignItems="center" mb={1}><LocationOn fontSize="small" color="action" sx={{ mr: 1 }} /><Typography variant="caption" color="textSecondary">{item.pickupAddress}</Typography></Box>
+                <Box display="flex" alignItems="center" mb={1}><Person fontSize="small" color="action" sx={{ mr: 1 }} /><Typography variant="caption" color="textSecondary">{item.createdBy?.householdProfile?.name}</Typography></Box>
             </CardContent>
             <Box p={2} pt={0}>
-                {item.status === 'CLAIMED' && (
-                    <Button fullWidth variant="outlined" size="small" onClick={() => handleStatusUpdate(item, 'IN_TRANSIT')}>
-                        Start Trip
-                    </Button>
-                )}
+                {item.status === 'CLAIMED' && <Button fullWidth variant="outlined" size="small" onClick={() => handleStatusUpdate(item, 'IN_TRANSIT')}>Start Trip</Button>}
                 {item.status === 'IN_TRANSIT' && (
-                    <Button fullWidth variant="contained" size="small" onClick={() => handleStatusUpdate(item, 'COMPLETED')}>
-                        Mark as Collected
-                    </Button>
+                    <Box display="flex" gap={1}>
+                        <Button fullWidth variant="outlined" size="small" startIcon={<DirectionsIcon />} onClick={() => handleGetDirections(item)}>Get Directions</Button>
+                        <Button fullWidth variant="contained" size="small" onClick={() => handleStatusUpdate(item, 'COMPLETED')}>Collected</Button>
+                    </Box>
                 )}
             </Box>
         </Card>
     );
 };
 
+const RejectedCard = ({ item, handleUnreject }) => (
+    <Card elevation={2} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <CardMedia component="img" sx={{ height: 140 }} image={item.imageUrl || `https://placehold.co/300x200?text=${item.wasteType}`} alt={item.wasteType} />
+        <CardContent sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" fontSize="1.1rem" fontWeight="bold">{item.wasteType}</Typography>
+            <Typography variant="body2" color="textSecondary" mb={1}>{item.description}</Typography>
+        </CardContent>
+        <Divider />
+        <CardActions sx={{ p: 2 }}>
+            <Button fullWidth variant="contained" size="small" startIcon={<UnrejectIcon />} onClick={() => handleUnreject(item.id)}>Move to Available</Button>
+        </CardActions>
+    </Card>
+);
+
+const TabPanel = ({ children, value, index }) => (
+  <div hidden={value !== index}>
+    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+  </div>
+);
 
 export default function CollectorHistoryPage() {
   const router = useRouter();
   
-  // UI State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState(0); // 0 for Active, 1 for Completed
-
-  // Data State
+  const [activeTab, setActiveTab] = useState(0);
   const [user, setUser] = useState(null);
   const [activeJobs, setActiveJobs] = useState([]);
   const [completedJobs, setCompletedJobs] = useState([]);
-
-  // Dialog & Snackbar
+  const [rejectedJobs, setRejectedJobs] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, item: null, newStatus: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // --- Navigation Items for Collector ---
   const navItems = [
     { name: 'Available Jobs', path: '/collector-dashboard', icon: <JobsIcon /> },
     { name: 'Collection History', path: '/collector-history', icon: <HistoryIcon /> },
@@ -128,14 +126,21 @@ export default function CollectorHistoryPage() {
     const parsedUser = JSON.parse(storedUserData);
     setUser(parsedUser);
 
-    const fetchCollections = async (collectorId) => {
+    const fetchAllData = async (collectorId) => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/collectors/${collectorId}/alerts`);
-        if (!response.ok) throw new Error('Failed to fetch collections.');
-        const data = await response.json();
-        setActiveJobs(data.activeAlerts);
-        setCompletedJobs(data.completedAlerts);
+        const [collectionsRes, rejectedRes] = await Promise.all([
+            fetch(`/api/collectors/${collectorId}/alerts`),
+            fetch(`/api/collectors/${collectorId}/rejected-alerts`)
+        ]);
+        if (!collectionsRes.ok || !rejectedRes.ok) throw new Error('Failed to fetch data.');
+        
+        const collectionsData = await collectionsRes.json();
+        const rejectedData = await rejectedRes.json();
+
+        setActiveJobs(collectionsData.activeAlerts);
+        setCompletedJobs(collectionsData.completedAlerts);
+        setRejectedJobs(rejectedData.rejectedAlerts);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -144,12 +149,18 @@ export default function CollectorHistoryPage() {
     };
 
     if (parsedUser?.id) {
-      fetchCollections(parsedUser.id);
+      fetchAllData(parsedUser.id);
     }
   }, [router]);
 
   const handleStatusUpdate = (item, newStatus) => {
     setConfirmDialog({ open: true, item, newStatus });
+  };
+
+  const handleGetDirections = (item) => {
+    const { pickupLatitude, pickupLongitude } = item;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${pickupLatitude},${pickupLongitude}`;
+    window.open(url, '_blank');
   };
 
   const confirmStatusUpdate = async () => {
@@ -160,19 +171,43 @@ export default function CollectorHistoryPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: newStatus, collectorId: user.id }),
         });
-
         const result = await response.json();
         if (!response.ok) throw new Error(result.message);
 
-        // Move the item from active to completed list
-        setActiveJobs(prev => prev.filter(job => job.id !== item.id));
-        setCompletedJobs(prev => [result.alert, ...prev]);
-
-        setSnackbar({ open: true, message: `Job marked as ${newStatus.toLowerCase()}!`, severity: 'success' });
+        // --- FIXED: Correctly handle state updates based on the new status ---
+        if (newStatus === 'IN_TRANSIT') {
+            // Update the item within the activeJobs list
+            setActiveJobs(prev => prev.map(job => job.id === item.id ? result.alert : job));
+            setSnackbar({ open: true, message: 'Trip started! Opening directions...', severity: 'success' });
+            handleGetDirections(result.alert); // Automatically open directions
+        } else if (newStatus === 'COMPLETED') {
+            // Move the item from active to completed list
+            setActiveJobs(prev => prev.filter(job => job.id !== item.id));
+            setCompletedJobs(prev => [result.alert, ...prev]);
+            setSnackbar({ open: true, message: `Job marked as completed!`, severity: 'success' });
+        }
     } catch (err) {
         setSnackbar({ open: true, message: err.message, severity: 'error' });
     } finally {
         setConfirmDialog({ open: false, item: null, newStatus: '' });
+    }
+  };
+
+  const handleUnreject = async (alertId) => {
+    try {
+        const response = await fetch(`/api/alerts/${alertId}/unreject`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectorId: user.id }),
+        });
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.message || 'Failed to un-reject alert.');
+        }
+        setRejectedJobs(prev => prev.filter(job => job.id !== alertId));
+        setSnackbar({ open: true, message: 'Job moved back to available list.', severity: 'success' });
+    } catch (err) {
+        setSnackbar({ open: true, message: err.message, severity: 'error' });
     }
   };
 
@@ -184,76 +219,49 @@ export default function CollectorHistoryPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', overflow: 'hidden', position: 'relative', background: '#e9f5ec' }}>
-      <Particles
-        id="tsparticles"
-        init={particlesInit}
-        options={{
-          background: { color: { value: '#ffffff00' } },
-          fpsLimit: 60,
-          interactivity: { events: { onHover: { enable: true, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } },
-          particles: {
-            color: { value: '#4CAF50' },
-            links: { enable: true, color: '#4CAF50', distance: 150 },
-            move: { enable: true, speed: 1.5 },
-            size: { value: { min: 1, max: 3 } },
-            number: { value: 60 },
-            opacity: { value: 0.3, animation: { enable: false } },
-            life: { duration: { sync: false, value: 0 } }
-          }
-        }}
-        style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }}
-      />
-
+      <Particles id="tsparticles" init={particlesInit} options={{ background: { color: { value: '#ffffff00' } }, fpsLimit: 60, interactivity: { events: { onHover: { enable: true, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } }, particles: { color: { value: '#4CAF50' }, links: { enable: true, color: '#4CAF50', distance: 150 }, move: { enable: true, speed: 1.5 }, size: { value: { min: 1, max: 3 } }, number: { value: 60 }, opacity: { value: 0.3 } } }} style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }} />
       <DashboardLayout navItems={navItems} pageTitle="Collection History">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{ position: 'relative', zIndex: 1 }}
-        >
-          <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 3 }}>
-            My Collections
-          </Typography>
-        
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={6}><Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}><Typography variant="h4">{activeJobs.length}</Typography><Typography variant="caption">ACTIVE JOBS</Typography></Paper></Grid>
-            <Grid item xs={6}><Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}><Typography variant="h4">{completedJobs.length}</Typography><Typography variant="caption">COMPLETED</Typography></Paper></Grid>
-        </Grid>
-
-        <Tabs value={activeTab} onChange={(e, val) => setActiveTab(val)} sx={{ mb: 3 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ position: 'relative', zIndex: 1 }}>
+          <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold', mb: 3 }}>My Collections</Typography>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          
+          <Tabs value={activeTab} onChange={(e, val) => setActiveTab(val)} sx={{ mb: 3 }}>
             <Tab label={`Active (${activeJobs.length})`} />
             <Tab label={`Completed (${completedJobs.length})`} />
-        </Tabs>
+            <Tab label={`Rejected (${rejectedJobs.length})`} />
+          </Tabs>
 
-        <Grid container spacing={3}>
-            {(activeTab === 0 ? activeJobs : completedJobs).map((item) => (
-                <Grid item xs={12} sm={6} md={4} key={item.id}>
-                    <CollectionCard item={item} handleStatusUpdate={handleStatusUpdate} />
-                </Grid>
-            ))}
-        </Grid>
+          <TabPanel value={activeTab} index={0}>
+            <Grid container spacing={3}>
+                {activeJobs.map((item) => <Grid item xs={12} sm={6} md={4} key={item.id}><CollectionCard item={item} handleStatusUpdate={handleStatusUpdate} handleGetDirections={handleGetDirections} /></Grid>)}
+                {activeJobs.length === 0 && <Typography sx={{ mt: 4, textAlign: 'center', width: '100%' }}>No active jobs.</Typography>}
+            </Grid>
+          </TabPanel>
+          <TabPanel value={activeTab} index={1}>
+            <Grid container spacing={3}>
+                {completedJobs.map((item) => <Grid item xs={12} sm={6} md={4} key={item.id}><CollectionCard item={item} handleStatusUpdate={handleStatusUpdate} handleGetDirections={handleGetDirections} /></Grid>)}
+                {completedJobs.length === 0 && <Typography sx={{ mt: 4, textAlign: 'center', width: '100%' }}>No jobs completed yet.</Typography>}
+            </Grid>
+          </TabPanel>
+          <TabPanel value={activeTab} index={2}>
+            <Grid container spacing={3}>
+                {rejectedJobs.map((item) => <Grid item xs={12} sm={6} md={4} key={item.id}><RejectedCard item={item} handleUnreject={handleUnreject} /></Grid>)}
+                {rejectedJobs.length === 0 && <Typography sx={{ mt: 4, textAlign: 'center', width: '100%' }}>You have not rejected any jobs.</Typography>}
+            </Grid>
+          </TabPanel>
 
-        {(activeTab === 0 && activeJobs.length === 0) && <Typography sx={{ mt: 4, textAlign: 'center' }}>No active jobs. Claim one from the dashboard!</Typography>}
-        {(activeTab === 1 && completedJobs.length === 0) && <Typography sx={{ mt: 4, textAlign: 'center' }}>No jobs completed yet.</Typography>}
-
-        <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ open: false, item: null })}>
+          <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ open: false, item: null })}>
             <DialogTitle>Confirm Action</DialogTitle>
-            <DialogContent>
-                <Typography>
-                    Are you sure you want to mark "{confirmDialog.item?.wasteType}" as {confirmDialog.newStatus?.toLowerCase()}?
-                </Typography>
-            </DialogContent>
+            <DialogContent><Typography>Are you sure you want to mark "{confirmDialog.item?.wasteType}" as {confirmDialog.newStatus?.toLowerCase()}?</Typography></DialogContent>
             <DialogActions>
-                <Button onClick={() => setConfirmDialog({ open: false, item: null })}>Cancel</Button>
-                <Button onClick={confirmStatusUpdate} variant="contained">Confirm</Button>
+              <Button onClick={() => setConfirmDialog({ open: false, item: null })}>Cancel</Button>
+              <Button onClick={confirmStatusUpdate} variant="contained">Confirm</Button>
             </DialogActions>
-        </Dialog>
+          </Dialog>
 
-        <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
+          <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
             <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
-        </Snackbar>
+          </Snackbar>
         </motion.div>
       </DashboardLayout>
     </Box>

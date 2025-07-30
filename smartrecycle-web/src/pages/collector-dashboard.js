@@ -34,7 +34,7 @@ import {
   Science,
   Map as MapIcon,
   Close as RejectIcon,
-  BusinessCenter as JobsIcon, // Icon for jobs
+  BusinessCenter as JobsIcon,
   History as HistoryIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -86,7 +86,7 @@ const MaterialCard = ({ material, handleClaimMaterial, handleRejectMaterial, cla
             {material.description || 'No description provided.'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}><LocationOn sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} /><Typography variant="body2">{material.pickupAddress}</Typography></Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}><Person sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} /><Typography variant="body2">{material.createdBy?.profile?.name || 'N/A'}</Typography></Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}><Person sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} /><Typography variant="body2">{material.createdBy?.householdProfile?.name || 'N/A'}</Typography></Box>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}><Schedule sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} /><Typography variant="body2">{new Date(material.createdAt).toLocaleString()}</Typography></Box>
         </CardContent>
       </CardActionArea>
@@ -133,7 +133,6 @@ export default function CollectorDashboardPage() {
   };
 
   useEffect(() => {
-    // ... (Your existing user and data fetching logic remains unchanged)
     const storedUserData = localStorage.getItem('user_data');
     if (!storedUserData) {
       router.push('/');
@@ -172,7 +171,6 @@ export default function CollectorDashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    // ... (Your existing filtering logic remains unchanged)
     let filtered = materials;
     if (filterType !== 'all') {
       filtered = filtered.filter(material => material.wasteType === filterType);
@@ -188,17 +186,51 @@ export default function CollectorDashboardPage() {
     setFilteredMaterials(filtered);
   }, [materials, filterType, searchTerm]);
 
+  // MODIFIED: Added full working logic
   const handleClaimMaterial = async (alertId) => {
-    // ... (Your existing claim logic remains unchanged)
+    setClaimingId(alertId);
+    try {
+        const response = await fetch(`/api/alerts/${alertId}/claim`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectorId: user.id }),
+        });
+        const result = await response.json();
+        if (response.ok) {
+            setMaterials(prev => prev.filter(m => m.id !== alertId));
+            setSnackbar({ open: true, message: 'Material claimed successfully!', severity: 'success' });
+        } else {
+            throw new Error(result.message || 'Failed to claim material.');
+        }
+    } catch (err) {
+        setSnackbar({ open: true, message: err.message, severity: 'error' });
+    } finally {
+        setClaimingId(null);
+    }
   };
 
+  // MODIFIED: Added full working logic
   const handleRejectMaterial = async (alertId) => {
-    // ... (Your existing reject logic remains unchanged)
+    try {
+        const response = await fetch(`/api/alerts/${alertId}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectorId: user.id }),
+        });
+        const result = await response.json();
+        if (response.ok) {
+            setMaterials(prev => prev.filter(m => m.id !== alertId));
+            setSnackbar({ open: true, message: 'Job rejected and hidden.', severity: 'info' });
+        } else {
+            throw new Error(result.message || 'Failed to reject material.');
+        }
+    } catch (err) {
+        setSnackbar({ open: true, message: err.message, severity: 'error' });
+    }
   };
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
-  // --- Animation Variants ---
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
