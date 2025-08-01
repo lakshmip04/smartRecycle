@@ -43,6 +43,8 @@ import {
 } from '@mui/icons-material';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
+import Confetti from 'react-confetti';
+import toast, { Toaster } from 'react-hot-toast';
 
 // --- Import your actual components ---
 import DashboardLayout from '../components/DashboardLayout';
@@ -111,6 +113,8 @@ export default function UserDashboard() {
     pickupTimeSlot: '',
   });
   const [imageFile, setImageFile] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
 
   const userNavItems = [
     { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
@@ -145,6 +149,20 @@ export default function UserDashboard() {
     if (parsedUser?.id) fetchAlerts(parsedUser.id);
     else setLoading(false);
   }, [router]);
+
+  // Set window dimensions for confetti
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files[0]) {
@@ -213,6 +231,26 @@ export default function UserDashboard() {
           pickupTimeSlot: '',
         });
         setImageFile(null);
+        
+        // Trigger celebration effects
+        setShowConfetti(true);
+        toast.success('🎉 Thanks for being part of building a cleaner city! Your waste alert has been posted successfully.', {
+          duration: 6000,
+          style: {
+            background: '#4CAF50',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '12px',
+            fontSize: '16px',
+            fontWeight: '500',
+          },
+          icon: '🌱',
+        });
+        
+        // Stop confetti after 5 seconds
+        setTimeout(() => {
+          setShowConfetti(false);
+        }, 5000);
       } else {
         setError(result.message || 'Failed to create alert.');
       }
@@ -242,6 +280,21 @@ export default function UserDashboard() {
 
   return (
     <Box sx={{ minHeight: '100vh', overflowX: 'hidden', position: 'relative', background: '#e9f5ec' }} className="transition-all duration-300 ease-in-out">
+      {/* Confetti Effect */}
+      {showConfetti && (
+        <Confetti
+          width={windowDimensions.width}
+          height={windowDimensions.height}
+          recycle={false}
+          numberOfPieces={300}
+          gravity={0.3}
+          style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999 }}
+        />
+      )}
+      
+      {/* Toast Notifications */}
+      <Toaster position="top-center" />
+      
       <Particles
         id="tsparticles"
         init={particlesInit}
