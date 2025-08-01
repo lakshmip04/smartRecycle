@@ -1,5 +1,4 @@
-import React from 'react';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import React from 'react'; 
 import { useState, useRef, useEffect } from 'react';
 import {
   Box,
@@ -30,10 +29,10 @@ import {
   Clear,
   Mic,
   MicOff,
-  VolumeUp, // Icon for Read Aloud
-  Pause,    // Icon for Pause
-  PlayArrow,// Icon for Resume
-  Stop,     // Icon for Stop
+  VolumeUp,
+  Pause,
+  PlayArrow,
+  Stop,
 } from '@mui/icons-material';
 
 const RecycleRecommendationChatbot = () => {
@@ -50,41 +49,143 @@ const RecycleRecommendationChatbot = () => {
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
 
-  // --- State for Text-to-Speech Controls ---
+  const [isRecording, setIsRecording] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en'); 
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
+  // Text-to-Speech Controls
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
 
-  // --- Voice Recognition (Input) Setup ---
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition,
-  } = useSpeechRecognition();
-
+  // Clean up media resources on unmount
   useEffect(() => {
-    setInputMessage(transcript);
-  }, [transcript]);
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
 
-  const handleVoiceInput = () => {
-    if (!browserSupportsSpeechRecognition) {
-      setError('Voice recognition is not supported by your browser.');
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+        setInputMessage("Processing voice input...");
+      }
       return;
     }
-    if (listening) {
-      SpeechRecognition.stopListening();
-    } else {
-      resetTranscript();
-      SpeechRecognition.startListening({ continuous: false });
+
+    try {
+      setError('');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+          await sendAudioToSTT(audioBlob);
+        } else {
+          setError("No audio recorded. Please try again.");
+        }
+        
+        setIsRecording(false);
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error("Recording error:", event.error);
+        setError("Recording failed. Please try again.");
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+      };
+
+      mediaRecorder.start(100); // Emit data every 100ms
+      setIsRecording(true);
+      
+    } catch (err) {
+      console.error("Microphone access error:", err);
+      setError("Microphone access denied or not available.");
+      setIsRecording(false);
     }
   };
 
-  // --- Text-to-Speech (Output) Functionality ---
+  const sendAudioToSTT = async (audioBlob) => {
+    try {
+      setIsLoading(true);
+      const apiKey = "cf04a6d0b99f4c098c0023ad9ac9f128";
+
+      const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
+        method: 'POST',
+        headers: { authorization: apiKey },
+        body: audioBlob
+      });
+
+      const { upload_url } = await uploadRes.json();
+      if (!upload_url) throw new Error('Upload failed');
+
+      const transcriptRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+        method: 'POST',
+        headers: {
+          authorization: apiKey,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          audio_url: upload_url, 
+          language_code: selectedLanguage,
+          disfluencies: false,
+          format_text: true
+        })
+      });
+
+      const { id: transcriptId } = await transcriptRes.json();
+      if (!transcriptId) throw new Error('Transcription request failed');
+
+      const startTime = Date.now();
+      const timeout = 30000;
+      
+      while (Date.now() - startTime < timeout) {
+        const pollingRes = await fetch(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
+          headers: { authorization: apiKey }
+        });
+        const transcriptData = await pollingRes.json();
+
+        if (transcriptData.status === 'completed') {
+          setInputMessage(transcriptData.text);
+          return;
+        }
+        
+        if (transcriptData.status === 'error') {
+          throw new Error(transcriptData.error || "Transcription failed");
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      throw new Error("Transcription timeout");
+      
+    } catch (err) {
+      console.error("STT Error:", err);
+      setError(err.message || 'Voice input failed. Please try typing instead.');
+      setInputMessage("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePlay = (text, messageId) => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Stop any current speech
-
+      window.speechSynthesis.cancel();
       const cleanedText = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#+\s?(.*)/g, '$1');
       const utterance = new SpeechSynthesisUtterance(cleanedText);
 
@@ -129,7 +230,6 @@ const RecycleRecommendationChatbot = () => {
     setIsPaused(false);
   };
 
-  // When rate changes, restart the speech for the current message
   const handleRateChange = (rate, currentMessage) => {
     setPlaybackRate(rate);
     if (speakingMessageId === currentMessage.id) {
@@ -147,16 +247,26 @@ const RecycleRecommendationChatbot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const generatePrompt = (userMessage) => {
-    return `
-      You are a helpful 3R (Reduce, Reuse, Recycle) assistant focused on environmental sustainability. 
-      The user is asking about: "${userMessage}"
-      Please provide comprehensive recommendations organized into these categories:
-      1. REDUCE - How to minimize or prevent this waste in the future
-      2. REUSE - Creative ways to repurpose or use this item again
-      3. RECYCLE - Proper disposal and recycling methods
-      Format your response in a friendly, conversational tone with clear sections for Reduce, Reuse, and Recycle, using emojis.
-    `;
+  const generatePrompt = (userMessage, languageCode) => {
+    const languageNames = {
+      en: 'English',
+      hi: 'Hindi',
+      kn: 'Kannada',
+      te: 'Telugu'
+    };
+    const languageName = languageNames[languageCode] || 'English';
+
+    return `You are a helpful 3R (Reduce, Reuse, Recycle) assistant focused on environmental sustainability. 
+Please respond in ${languageName}.
+
+The user is asking about: "${userMessage}"
+
+Provide clear and friendly recommendations, organized into the following categories:
+1. REDUCE - How to minimize or prevent this type of waste in the future.
+2. REUSE - Creative and practical ways to repurpose or reuse it.
+3. RECYCLE - Proper disposal and recycling methods.
+
+Use a friendly tone and include emojis to make the response more engaging.`;
   };
 
   const quickSuggestions = [
@@ -177,13 +287,12 @@ const RecycleRecommendationChatbot = () => {
     setInputMessage('');
     setIsLoading(true);
     setError('');
-    resetTranscript();
 
     try {
       const response = await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: generatePrompt(messageToSend) }] }] })
+        body: JSON.stringify({ contents: [{ parts: [{ text: generatePrompt(messageToSend, selectedLanguage) }] }] })
       });
 
       if (!response.ok) throw new Error('Failed to get response from AI');
@@ -192,7 +301,6 @@ const RecycleRecommendationChatbot = () => {
       const botResponseText = data.content;
       const botMessage = { id: Date.now() + 1, type: 'bot', content: botResponseText, timestamp: new Date() };
       setMessages(prev => [...prev, botMessage]);
-      // NOTE: Automatic speech is removed. User now clicks to play.
     } catch (err) {
       console.error('Error:', err);
       const errorMessage = { id: Date.now() + 1, type: 'bot', content: 'Sorry, I encountered an error. Please try again.', timestamp: new Date(), isError: true };
@@ -215,20 +323,11 @@ const RecycleRecommendationChatbot = () => {
   };
 
   const clearChat = () => {
-    handleStop(); // Stop any active speech
+    handleStop();
     setMessages([
       { id: 1, type: 'bot', content: 'Hello! I\'m your 3R (Reduce, Reuse, Recycle) assistant. How can I help you today? 🌱', timestamp: new Date() }
     ]);
     setError('');
-  };
-
-  const formatBotMessage = (content) => {
-    // ... (Your existing formatBotMessage logic remains unchanged)
-    return [{ type: 'general', content: content }]; // Simplified for example
-  };
-
-  const getSectionIcon = (type) => {
-    // ... (Your existing getSectionIcon logic remains unchanged)
   };
 
   return (
@@ -237,7 +336,20 @@ const RecycleRecommendationChatbot = () => {
         <Box sx={{ p: 2, bgcolor: '#4CAF50', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <SmartToy sx={{ mr: 1.5 }} />
-            <Typography variant="h6">3R Recommendation Chatbot</Typography>
+            <Typography variant="h6" sx={{ mr: 2 }}>3R Recommendation Chatbot</Typography>
+            <FormControl size="small" sx={{ minWidth: 120, bgcolor: 'white', borderRadius: 1 }}>
+              <Select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                displayEmpty
+                sx={{ fontSize: '0.875rem' }}
+              >
+                <MenuItem value="en">English</MenuItem>
+                <MenuItem value="hi">Hindi</MenuItem>
+                <MenuItem value="kn">Kannada</MenuItem>
+                <MenuItem value="te">Telugu</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
           <Tooltip title="Clear Chat">
             <IconButton onClick={clearChat} sx={{ color: 'white' }}>
@@ -259,7 +371,6 @@ const RecycleRecommendationChatbot = () => {
                     <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.7, textAlign: message.type === 'user' ? 'right' : 'left' }}>{message.timestamp.toLocaleTimeString()}</Typography>
                   </Paper>
 
-                  {/* --- NEW AUDIO CONTROLS --- */}
                   {message.type === 'bot' && !message.isError && (
                     <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start' }}>
                       {speakingMessageId !== message.id ? (
@@ -313,17 +424,99 @@ const RecycleRecommendationChatbot = () => {
           </Box>
         )}
 
-        <Box sx={{ p: 2, bgcolor: 'white', borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ p: 2, bgcolor: 'white', borderTop: 1, borderColor: 'divider', position: 'relative' }}>
           {error && <Alert severity="error" onClose={() => setError('')} sx={{ mb: 1.5 }}>{error}</Alert>}
+          
+          {/* Recording Indicator */}
+          {isRecording && (
+            <Box sx={{
+              position: 'absolute',
+              bottom: '100%',
+              right: 0,
+              mb: 1,
+              bgcolor: 'error.main',
+              color: 'white',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              animation: 'pulse 1s infinite',
+              '@keyframes pulse': {
+                '0%': { opacity: 1 },
+                '50%': { opacity: 0.7 },
+                '100%': { opacity: 1 }
+              }
+            }}>
+              <Box sx={{
+                width: 8,
+                height: 8,
+                bgcolor: 'white',
+                borderRadius: '50%',
+                mr: 1,
+                animation: 'pulse 1s infinite'
+              }} />
+              <Typography variant="caption">Recording</Typography>
+            </Box>
+          )}
+
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField fullWidth multiline maxRows={3} value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} onKeyPress={handleKeyPress} placeholder="Describe your waste or ask about recycling..." disabled={isLoading} variant="outlined" size="small" />
+            <TextField 
+              fullWidth 
+              multiline 
+              maxRows={3} 
+              value={inputMessage} 
+              onChange={(e) => setInputMessage(e.target.value)} 
+              onKeyPress={handleKeyPress} 
+              placeholder="Describe your waste or ask about recycling..." 
+              disabled={isLoading} 
+              variant="outlined" 
+              size="small" 
+            />
             <Tooltip title="Send Message">
-              <Button variant="contained" onClick={handleSendMessage} disabled={isLoading || !inputMessage.trim()} sx={{ minWidth: 'auto', px: 2, backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}><Send /></Button>
+              <span>
+                <Button
+                  variant="contained"
+                  onClick={handleSendMessage}
+                  disabled={isLoading || !inputMessage.trim()}
+                  sx={{ minWidth: 'auto', px: 2, backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}
+                >
+                  <Send />
+                </Button>
+              </span>
             </Tooltip>
-            <Tooltip title={listening ? "Stop Listening" : "Start Voice Input"}>
-              <IconButton color={listening ? "error" : "primary"} onClick={handleVoiceInput} disabled={isLoading} sx={{ border: 1, borderColor: 'divider' }}>
-                {listening ? <MicOff /> : <Mic />}
-              </IconButton>
+            <Tooltip title={isRecording ? "Stop Recording" : "Start Voice Input"}>
+              <Box sx={{ position: 'relative' }}>
+                {isRecording && (
+                  <Box sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    width: 16,
+                    height: 16,
+                    bgcolor: 'error.main',
+                    borderRadius: '50%',
+                    border: '2px solid white'
+                  }} />
+                )}
+                <IconButton
+                  color={isRecording ? "error" : "primary"}
+                  onClick={handleVoiceInput}
+                  disabled={isLoading}
+                  sx={{
+                    bgcolor: isRecording ? 'rgba(244, 67, 54, 0.1)' : 'transparent',
+                    '&:hover': {
+                      bgcolor: isRecording ? 'rgba(244, 67, 54, 0.2)' : 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                >
+                  {isRecording ? (
+                    <MicOff sx={{ color: 'error.main' }} />
+                  ) : (
+                    <Mic />
+                  )}
+                </IconButton>
+              </Box>
             </Tooltip>
           </Box>
         </Box>
