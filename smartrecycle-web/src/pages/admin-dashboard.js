@@ -29,8 +29,9 @@ import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 
-// --- Import your DashboardLayout component ---
+// --- Import your DashboardLayout and Analytics components ---
 import DashboardLayout from '../components/DashboardLayout';
+import AnalyticsDashboard from '../components/AnalyticsDashboard';
 
 // --- A reusable styled Paper component to match the theme ---
 const StyledPaper = (props) => (
@@ -59,12 +60,13 @@ export default function AdminDashboard() {
   const [systemStats, setSystemStats] = useState({});
   const [users, setUsers] = useState([]);
   const [collectors, setCollectors] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null); // ADDED: State for analytics
 
   const adminNavItems = [
     { name: 'Overview', key: 'overview', icon: <DashboardIcon /> },
     { name: 'User Management', key: 'users', icon: <PeopleIcon /> },
     { name: 'Collector Management', key: 'collectors', icon: <TruckIcon /> },
-    { name: 'AI Statistics', key: 'ai-stats', icon: <ChartIcon /> },
+    { name: 'Analytics', key: 'analytics', icon: <ChartIcon /> }, // UPDATED: Renamed for clarity
   ];
 
   const particlesInit = async (main) => {
@@ -83,23 +85,27 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       setError('');
       try {
-        const [statsRes, usersRes, collectorsRes] = await Promise.all([
+        // ADDED: Fetch analytics data along with other data
+        const [statsRes, usersRes, collectorsRes, analyticsRes] = await Promise.all([
           fetch('/api/admin/stats'),
           fetch('/api/admin/users'),
           fetch('/api/admin/collectors'),
+          fetch('/api/admin/analytics'),
         ]);
 
-        if (!statsRes.ok || !usersRes.ok || !collectorsRes.ok) {
+        if (!statsRes.ok || !usersRes.ok || !collectorsRes.ok || !analyticsRes.ok) {
           throw new Error('Failed to fetch admin data.');
         }
 
         const statsData = await statsRes.json();
         const usersData = await usersRes.json();
         const collectorsData = await collectorsRes.json();
+        const analyticsResult = await analyticsRes.json(); // ADDED: Get analytics JSON
 
         setSystemStats(statsData);
         setUsers(usersData);
         setCollectors(collectorsData);
+        setAnalyticsData(analyticsResult); // ADDED: Set analytics state
 
       } catch (err) {
         setError(err.message);
@@ -112,11 +118,41 @@ export default function AdminDashboard() {
   }, [router]);
 
   const handleApprove = async (collectorId) => {
-    // ... (Your existing handleApprove logic remains unchanged)
+    try {
+        const response = await fetch(`/api/admin/collectors/${collectorId}/verify`, {
+            method: 'PUT',
+        });
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.message || 'Failed to approve collector.');
+        }
+        setCollectors(prev => prev.filter(c => c.id !== collectorId));
+        setSnackbar({ open: true, message: 'Collector approved!', severity: 'success' });
+    } catch (err) {
+        setSnackbar({ open: true, message: err.message, severity: 'error' });
+    }
   };
 
   const handleDelete = async (type, userId) => {
-    // ... (Your existing handleDelete logic remains unchanged)
+    if (window.confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) {
+        try {
+            const response = await fetch(`/api/admin/users/${userId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.message || 'Failed to delete user.');
+            }
+            if (type === 'user') {
+                setUsers(prev => prev.filter(u => u.id !== userId));
+            } else {
+                setCollectors(prev => prev.filter(c => c.id !== userId));
+            }
+            setSnackbar({ open: true, message: 'User deleted successfully!', severity: 'success' });
+        } catch (err) {
+            setSnackbar({ open: true, message: err.message, severity: 'error' });
+        }
+    }
   };
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
@@ -139,51 +175,18 @@ export default function AdminDashboard() {
         return (
           <StyledPaper>
             <Typography variant="h6" gutterBottom sx={{ color: '#2E7D32' }}>User Management</Typography>
-            <TableContainer>
-              <Table>
-                <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Join Date</TableCell><TableCell>Address</TableCell><TableCell>Actions</TableCell></TableRow></TableHead>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>{user.householdProfile?.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{user.householdProfile?.address}</TableCell>
-                      <TableCell><IconButton color="error" onClick={() => handleDelete('user', user.id)}><DeleteIcon /></IconButton></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <TableContainer><Table><TableHead><TableRow><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Join Date</TableCell><TableCell>Address</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>{users.map((user) => (<TableRow key={user.id} hover><TableCell>{user.householdProfile?.name}</TableCell><TableCell>{user.email}</TableCell><TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell><TableCell>{user.householdProfile?.address}</TableCell><TableCell><IconButton color="error" onClick={() => handleDelete('user', user.id)}><DeleteIcon /></IconButton></TableCell></TableRow>))}</TableBody></Table></TableContainer>
           </StyledPaper>
         );
       case 'collectors':
         return (
           <StyledPaper>
             <Typography variant="h6" gutterBottom sx={{ color: '#2E7D32' }}>Pending Collector Approvals</Typography>
-            <TableContainer>
-              <Table>
-                <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Join Date</TableCell><TableCell>Address</TableCell><TableCell>Actions</TableCell></TableRow></TableHead>
-                <TableBody>
-                  {collectors.map((collector) => (
-                    <TableRow key={collector.id} hover>
-                      <TableCell>{collector.collectorProfile?.name}</TableCell>
-                      <TableCell>{collector.email}</TableCell>
-                      <TableCell>{new Date(collector.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{collector.collectorProfile?.address}</TableCell>
-                      <TableCell>
-                        <IconButton color="success" onClick={() => handleApprove(collector.id)}><CheckIcon /></IconButton>
-                        <IconButton color="error" onClick={() => handleDelete('collector', collector.id)}><DeleteIcon /></IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <TableContainer><Table><TableHead><TableRow><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Join Date</TableCell><TableCell>Address</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>{collectors.map((collector) => (<TableRow key={collector.id} hover><TableCell>{collector.collectorProfile?.name}</TableCell><TableCell>{collector.email}</TableCell><TableCell>{new Date(collector.createdAt).toLocaleDateString()}</TableCell><TableCell>{collector.collectorProfile?.address}</TableCell><TableCell><IconButton color="success" onClick={() => handleApprove(collector.id)}><CheckIcon /></IconButton><IconButton color="error" onClick={() => handleDelete('collector', collector.id)}><DeleteIcon /></IconButton></TableCell></TableRow>))}</TableBody></Table></TableContainer>
           </StyledPaper>
         );
-      case 'ai-stats':
-        return <StyledPaper><Typography>AI Statistics will be implemented later.</Typography></StyledPaper>;
+      case 'analytics': // UPDATED: Render the AnalyticsDashboard component
+        return <AnalyticsDashboard analyticsData={analyticsData} />;
       default:
         return null;
     }
