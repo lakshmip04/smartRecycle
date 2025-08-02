@@ -1,5 +1,7 @@
 import React from 'react'; 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 import {
   Box,
   Card,
@@ -36,11 +38,13 @@ import {
 } from '@mui/icons-material';
 
 const RecycleRecommendationChatbot = () => {
+  const { t, i18n } = useTranslation();
+  
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'bot',
-      content: 'Hello! I\'m your 3R (Reduce, Reuse, Recycle) assistant. Tell me what type of waste you have, and I\'ll give you personalized recommendations on how to reduce, reuse, or recycle it sustainably! 🌱',
+      content: t('chatbot.welcomeMessage'),
       timestamp: new Date(),
     }
   ]);
@@ -50,7 +54,7 @@ const RecycleRecommendationChatbot = () => {
   const messagesEndRef = useRef(null);
 
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('en'); 
+  const selectedLanguage = i18n.language || 'en'; 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
@@ -72,7 +76,7 @@ const RecycleRecommendationChatbot = () => {
     if (isRecording) {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
-        setInputMessage("Processing voice input...");
+        setInputMessage(t('chatbot.processingVoice'));
       }
       return;
     }
@@ -97,7 +101,7 @@ const RecycleRecommendationChatbot = () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
           await sendAudioToSTT(audioBlob);
         } else {
-          setError("No audio recorded. Please try again.");
+          setError(t('chatbot.voiceInputFailed'));
         }
         
         setIsRecording(false);
@@ -105,7 +109,7 @@ const RecycleRecommendationChatbot = () => {
 
       mediaRecorder.onerror = (event) => {
         console.error("Recording error:", event.error);
-        setError("Recording failed. Please try again.");
+        setError(t('chatbot.voiceInputFailed'));
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
       };
@@ -115,7 +119,7 @@ const RecycleRecommendationChatbot = () => {
       
     } catch (err) {
       console.error("Microphone access error:", err);
-      setError("Microphone access denied or not available.");
+      setError(t('chatbot.microphoneError'));
       setIsRecording(false);
     }
   };
@@ -176,7 +180,7 @@ const RecycleRecommendationChatbot = () => {
       
     } catch (err) {
       console.error("STT Error:", err);
-      setError(err.message || 'Voice input failed. Please try typing instead.');
+      setError(err.message || t('chatbot.voiceInputFailed'));
       setInputMessage("");
     } finally {
       setIsLoading(false);
@@ -186,7 +190,27 @@ const RecycleRecommendationChatbot = () => {
   const handlePlay = (text, messageId) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const cleanedText = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/#+\s?(.*)/g, '$1');
+      const cleanedText = text
+        // Remove star emoji characters
+        .replace(/⭐/g, '')
+        // Remove markdown bold formatting
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        // Remove markdown italic formatting
+        .replace(/\*(.*?)\*/g, '$1')
+        // Remove heading markers
+        .replace(/#+\s?(.*)/g, '$1')
+        // Replace bullet points with "and"
+        .replace(/^\s*[•·]\s*/gm, 'and ')
+        // Remove multiple spaces
+        .replace(/\s+/g, ' ')
+        // Remove special characters that don't sound good
+        .replace(/[🧴🥣뽁]/g, '')
+        // Replace section headers with natural speech
+        .replace(/\bREDUCE\b/g, 'For reducing waste,')
+        .replace(/\bREUSE\b/g, 'For reusing,')
+        .replace(/\bRECYCLE\b/g, 'For recycling,')
+        // Clean up any remaining formatting
+        .trim();
       const utterance = new SpeechSynthesisUtterance(cleanedText);
 
       utterance.lang = 'en-US';
@@ -203,15 +227,15 @@ const RecycleRecommendationChatbot = () => {
       };
 
       utterance.onerror = () => {
-        setError("An error occurred during speech synthesis.");
-        setSpeakingMessageId(null);
-        setIsPaused(false);
-      };
+              setError(t('chatbot.errorMessage'));
+      setSpeakingMessageId(null);
+      setIsPaused(false);
+    };
 
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setError('Text-to-speech not supported in this browser.');
-    }
+    window.speechSynthesis.speak(utterance);
+  } else {
+    setError(t('chatbot.ttsNotSupported'));
+  }
   };
 
   const handlePauseResume = () => {
@@ -240,7 +264,9 @@ const RecycleRecommendationChatbot = () => {
   const WORKER_URL = "https://gemini-worker.lakshmi20041304.workers.dev";
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   useEffect(() => {
@@ -252,30 +278,83 @@ const RecycleRecommendationChatbot = () => {
       en: 'English',
       hi: 'Hindi',
       kn: 'Kannada',
-      te: 'Telugu'
+      te: 'Telugu',
+      ta: 'Tamil',
+      ml: 'Malayalam'
     };
     const languageName = languageNames[languageCode] || 'English';
 
-    return `You are a helpful 3R (Reduce, Reuse, Recycle) assistant focused on environmental sustainability. 
-Please respond in ${languageName}.
+    return `You are a 3R (Reduce, Reuse, Recycle) assistant. Please respond in ${languageName} following this exact format with star ratings:
 
-The user is asking about: "${userMessage}"
+EXAMPLES:
 
-Provide clear and friendly recommendations, organized into the following categories:
-1. REDUCE - How to minimize or prevent this type of waste in the future.
-2. REUSE - Creative and practical ways to repurpose or reuse it.
-3. RECYCLE - Proper disposal and recycling methods.
+User: "Shampoo and conditioner bottles"
+Assistant: Shampoo and conditioner bottles are great candidates for recycling! Here's the best way to handle them. 🧴
 
-Use a friendly tone and include emojis to make the response more engaging.`;
+⭐⭐⭐⭐⭐ **REDUCE**
+Switch to solid shampoo and conditioner bars. They work great and completely eliminate plastic packaging.
+
+⭐⭐⭐⭐ **RECYCLE**
+A great option! These bottles are typically made from easily recyclable plastic (HDPE). Rinse them out, put the cap back on, and place them in your dry waste bin.
+
+⭐⭐ **REUSE**
+They can be refilled with product from bulk-buy stores if you have access to one.
+
+User: "Bubble wrap"
+Assistant: Bubble wrap is fun to pop, but let's see how we can handle it sustainably! 뽁뽁
+
+⭐⭐⭐⭐⭐ **REUSE**
+This is the best option! Keep it and reuse it for shipping your own packages or for safely storing fragile items at home.
+
+⭐⭐⭐ **RECYCLE**
+It can be recycled, but it must be bundled with other plastic films/bags. Don't put loose sheets in your recycling as they can jam machinery. Place it in a larger plastic bag with other soft plastics.
+
+⭐ **REDUCE**
+Request minimal or plastic-free packaging when ordering items online.
+
+User: "Yogurt or curd cups"
+Assistant: Those small plastic cups from yogurt or curd add up. Here's the plan: 🥣
+
+⭐⭐⭐⭐⭐ **REDUCE**
+Make your own curd at home or buy it in larger tubs instead of individual cups. This significantly reduces plastic waste.
+
+⭐⭐⭐ **REUSE**
+They are perfect for starting seeds for a small garden or for organizing small items like paper clips and buttons.
+
+⭐⭐ **RECYCLE**
+Rinse them thoroughly to remove all food residue and place them in your dry waste bin. Make sure they are completely dry.
+
+Now respond to: "${userMessage}"
+
+Follow the exact format: Start with a friendly intro, then give star ratings (⭐) from 1-5 for each category (**REDUCE**, **REUSE**, **RECYCLE**) based on how effective that option is for this item. Higher stars = better option. Include practical, specific advice for each category.`;
+  };
+
+  // Function to format markdown content for better display
+  const formatMarkdownContent = (content) => {
+    if (!content) return '';
+    
+    return content
+      // Convert **bold** to actual bold text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Convert *text* to emphasized text
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Convert ### headings
+      .replace(/### (.*)/g, '<div style="font-weight: bold; font-size: 1.1em; margin: 16px 0 8px 0; color: #2E7D32;">$1</div>')
+      // Convert bullet points
+      .replace(/^\* (.*)/gm, '<div style="margin: 4px 0; padding-left: 16px;">• $1</div>')
+      // Convert numbered lists
+      .replace(/^\d+\. (.*)/gm, '<div style="margin: 4px 0; padding-left: 16px;">$1</div>')
+      // Add spacing after paragraphs
+      .replace(/\n\n/g, '<br/><br/>');
   };
 
   const quickSuggestions = [
-    { text: "Plastic bottles", icon: "🥤" },
-    { text: "Food waste", icon: "🍎" },
-    { text: "Old clothes", icon: "👕" },
-    { text: "Electronic devices", icon: "📱" },
-    { text: "Paper waste", icon: "📄" },
-    { text: "Glass containers", icon: "🍶" },
+    { text: t('quickSuggestions.plasticBottles'), icon: "🥤" },
+    { text: t('quickSuggestions.foodWaste'), icon: "🍎" },
+    { text: t('quickSuggestions.oldClothes'), icon: "👕" },
+    { text: t('quickSuggestions.electronicDevices'), icon: "📱" },
+    { text: t('quickSuggestions.paperWaste'), icon: "📄" },
+    { text: t('quickSuggestions.glassContainers'), icon: "🍶" },
   ];
 
   const handleSendMessage = async () => {
@@ -303,9 +382,9 @@ Use a friendly tone and include emojis to make the response more engaging.`;
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
       console.error('Error:', err);
-      const errorMessage = { id: Date.now() + 1, type: 'bot', content: 'Sorry, I encountered an error. Please try again.', timestamp: new Date(), isError: true };
-      setMessages(prev => [...prev, errorMessage]);
-      setError('Sorry, I encountered an error. Please try again.');
+              const errorMessage = { id: Date.now() + 1, type: 'bot', content: t('chatbot.errorMessage'), timestamp: new Date(), isError: true };
+        setMessages(prev => [...prev, errorMessage]);
+        setError(t('chatbot.errorMessage'));
     } finally {
       setIsLoading(false);
     }
@@ -325,7 +404,7 @@ Use a friendly tone and include emojis to make the response more engaging.`;
   const clearChat = () => {
     handleStop();
     setMessages([
-      { id: 1, type: 'bot', content: 'Hello! I\'m your 3R (Reduce, Reuse, Recycle) assistant. How can I help you today? 🌱', timestamp: new Date() }
+      { id: 1, type: 'bot', content: t('chatbot.welcomeMessage'), timestamp: new Date() }
     ]);
     setError('');
   };
@@ -336,29 +415,23 @@ Use a friendly tone and include emojis to make the response more engaging.`;
         <Box sx={{ p: 2, bgcolor: '#4CAF50', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <SmartToy sx={{ mr: 1.5 }} />
-            <Typography variant="h6" sx={{ mr: 2 }}>3R Recommendation Chatbot</Typography>
-            <FormControl size="small" sx={{ minWidth: 120, bgcolor: 'white', borderRadius: 1 }}>
-              <Select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                displayEmpty
-                sx={{ fontSize: '0.875rem' }}
-              >
-                <MenuItem value="en">English</MenuItem>
-                <MenuItem value="hi">Hindi</MenuItem>
-                <MenuItem value="kn">Kannada</MenuItem>
-                <MenuItem value="te">Telugu</MenuItem>
-              </Select>
-            </FormControl>
+            <Typography variant="h6" sx={{ mr: 2 }}>{t('chatbot.title')}</Typography>
+            <LanguageSwitcher 
+              variant="outlined" 
+              sx={{ 
+                '& .MuiFormControl-root': { bgcolor: 'white', borderRadius: 1 },
+                '& .MuiSelect-select': { fontSize: '0.875rem' }
+              }} 
+            />
           </Box>
-          <Tooltip title="Clear Chat">
+          <Tooltip title={t('chatbot.clearChat')}>
             <IconButton onClick={clearChat} sx={{ color: 'white' }}>
               <Clear />
             </IconButton>
           </Tooltip>
         </Box>
 
-        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2, bgcolor: '#f5f5f5' }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', overflowY: 'scroll', p: 2, bgcolor: '#f5f5f5', maxHeight: 'calc(70vh - 200px)' }}>
           {messages.map((message) => (
             <Box key={message.id} sx={{ display: 'flex', justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', maxWidth: '80%', flexDirection: message.type === 'user' ? 'row-reverse' : 'row' }}>
@@ -367,26 +440,38 @@ Use a friendly tone and include emojis to make the response more engaging.`;
                 </Avatar>
                 <Box>
                   <Paper sx={{ p: 1.5, bgcolor: message.type === 'user' ? '#2E7D32' : 'white', color: message.type === 'user' ? 'white' : 'text.primary', borderRadius: 2, maxWidth: '100%', wordBreak: 'break-word', ...(message.isError && { bgcolor: 'error.light', color: 'error.contrastText' }) }}>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>{message.content}</Typography>
+                    {message.type === 'bot' && !message.isError ? (
+                      <Box 
+                        sx={{ 
+                          lineHeight: 1.6,
+                          '& strong': { fontWeight: 'bold' },
+                          '& em': { fontStyle: 'italic' },
+                          fontSize: '0.875rem'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: formatMarkdownContent(message.content) }}
+                      />
+                    ) : (
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>{message.content}</Typography>
+                    )}
                     <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.7, textAlign: message.type === 'user' ? 'right' : 'left' }}>{message.timestamp.toLocaleTimeString()}</Typography>
                   </Paper>
 
                   {message.type === 'bot' && !message.isError && (
                     <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start' }}>
                       {speakingMessageId !== message.id ? (
-                        <Tooltip title="Read Aloud">
+                        <Tooltip title={t('chatbot.readAloud')}>
                           <IconButton size="small" onClick={() => handlePlay(message.content, message.id)}>
                             <VolumeUp fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       ) : (
                         <Paper variant="outlined" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, p: 0.5, borderRadius: 2 }}>
-                          <Tooltip title={isPaused ? "Resume" : "Pause"}>
+                          <Tooltip title={isPaused ? t('chatbot.resume') : t('chatbot.pause')}>
                             <IconButton size="small" onClick={handlePauseResume}>
                               {isPaused ? <PlayArrow fontSize="small" /> : <Pause fontSize="small" />}
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Stop">
+                          <Tooltip title={t('chatbot.stop')}>
                             <IconButton size="small" onClick={handleStop}>
                               <Stop fontSize="small" />
                             </IconButton>
@@ -411,13 +496,13 @@ Use a friendly tone and include emojis to make the response more engaging.`;
               </Box>
             </Box>
           ))}
-          {isLoading && (<Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}><Box sx={{ display: 'flex', alignItems: 'center' }}><Avatar sx={{ bgcolor: '#757575', mr: 1 }}><SmartToy /></Avatar><Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2 }}><CircularProgress size={20} sx={{ mr: 1 }} /><Typography variant="body2" component="span">Thinking...</Typography></Paper></Box></Box>)}
+          {isLoading && (<Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}><Box sx={{ display: 'flex', alignItems: 'center' }}><Avatar sx={{ bgcolor: '#757575', mr: 1 }}><SmartToy /></Avatar><Paper sx={{ p: 2, bgcolor: 'white', borderRadius: 2 }}><CircularProgress size={20} sx={{ mr: 1 }} /><Typography variant="body2" component="span">{t('chatbot.thinking')}</Typography></Paper></Box></Box>)}
           <div ref={messagesEndRef} />
         </Box>
 
         {messages.length <= 1 && (
           <Box sx={{ p: 2, bgcolor: '#e9f5ec' }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>Quick suggestions:</Typography>
+            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>{t('chatbot.quickSuggestions')}</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {quickSuggestions.map((s, i) => <Chip key={i} label={`${s.icon} ${s.text}`} onClick={() => handleQuickSuggestion(s.text)} clickable size="small" sx={{ bgcolor: 'white', '&:hover': { bgcolor: '#c8e6c9' } }} />)}
             </Box>
@@ -456,7 +541,7 @@ Use a friendly tone and include emojis to make the response more engaging.`;
                 mr: 1,
                 animation: 'pulse 1s infinite'
               }} />
-              <Typography variant="caption">Recording</Typography>
+              <Typography variant="caption">{t('chatbot.recording')}</Typography>
             </Box>
           )}
 
@@ -468,12 +553,12 @@ Use a friendly tone and include emojis to make the response more engaging.`;
               value={inputMessage} 
               onChange={(e) => setInputMessage(e.target.value)} 
               onKeyPress={handleKeyPress} 
-              placeholder="Describe your waste or ask about recycling..." 
+              placeholder={t('chatbot.placeholder')} 
               disabled={isLoading} 
               variant="outlined" 
               size="small" 
             />
-            <Tooltip title="Send Message">
+            <Tooltip title={t('chatbot.sendMessage')}>
               <span>
                 <Button
                   variant="contained"
@@ -485,7 +570,7 @@ Use a friendly tone and include emojis to make the response more engaging.`;
                 </Button>
               </span>
             </Tooltip>
-            <Tooltip title={isRecording ? "Stop Recording" : "Start Voice Input"}>
+            <Tooltip title={isRecording ? t('chatbot.stopRecording') : t('chatbot.startVoiceInput')}>
               <Box sx={{ position: 'relative' }}>
                 {isRecording && (
                   <Box sx={{

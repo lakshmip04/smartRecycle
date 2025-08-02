@@ -1,0 +1,159 @@
+{
+  "app": {
+    "title": "SmartRecycle",
+    "subtitle": "Smart Waste Management Platform"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "alerts": "Alerts",
+    "map": "Map",
+    "history": "History",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "chatbot": {
+    "title": "3R Recommendation Chatbot",
+    "welcomeMessage": "Hello! I'm your 3R (Reduce, Reuse, Recycle) assistant. Tell me what type of waste you have, and I'll give you personalized recommendations on how to reduce, reuse, or recycle it sustainably! 🌱",
+    "placeholder": "Describe your waste or ask about recycling...",
+    "thinking": "Thinking...",
+    "sendMessage": "Send Message",
+    "voiceInput": "Voice Input",
+    "stopRecording": "Stop Recording",
+    "startVoiceInput": "Start Voice Input",
+    "readAloud": "Read Aloud",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "clearChat": "Clear Chat",
+    "errorMessage": "Sorry, I encountered an error. Please try again.",
+    "quickSuggestions": "Quick suggestions:",
+    "recording": "Recording",
+    "processingVoice": "Processing voice input...",
+    "ttsNotSupported": "Text-to-speech not supported in this browser.",
+    "microphoneError": "Microphone access denied or not available.",
+    "voiceInputFailed": "Voice input failed. Please try typing instead."
+  },
+  "wasteClassifier": {
+    "title": "AI Waste Classifier",
+    "description": "Upload or capture an image to classify waste type and biodegradability",
+    "uploadImage": "Upload Image",
+    "captureImage": "Capture Image",
+    "takePhoto": "Take Photo",
+    "cancel": "Cancel",
+    "analyzing": "Analyzing...",
+    "classifyWaste": "Classify Waste",
+    "classificationResults": "Classification Results",
+    "resultsAvailable": "Results Available",
+    "analyzedImage": "📸 Analyzed Image",
+    "humanDetected": "🚨 Human Detected in Image",
+    "humanDetectedMessage": "Please upload images of waste materials only. The AI has detected a human in this image. For proper waste classification, please capture or upload images containing only waste items (plastic, metal, paper, electronics, etc.).",
+    "wasteType": "Waste Type:",
+    "biodegradability": "Biodegradability:",
+    "confidence": "Confidence:",
+    "environmentalImpact": "Environmental Impact:",
+    "recyclingInstructions": "Recycling Instructions:",
+    "notClassifiedYet": "Not classified yet",
+    "notAnalyzedYet": "Not analyzed yet",
+    "classifyAnotherItem": "Classify Another Item",
+    "viewRawJson": "View Raw JSON",
+    "technicalClassificationData": "Technical Classification Data",
+    "rawApiResponse": "Raw API Response:",
+    "close": "Close"
+  },
+  "quickSuggestions": {
+    "plasticBottles": "Plastic bottles",
+    "foodWaste": "Food waste",
+    "oldClothes": "Old clothes",
+    "electronicDevices": "Electronic devices",
+    "paperWaste": "Paper waste",
+    "glassContainers": "Glass containers"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "refresh": "Refresh"
+  },
+  "languages": {
+    "english": "English",
+    "hindi": "Hindi",
+    "kannada": "Kannada",
+    "telugu": "Telugu",
+    "malayalam": "Malayalam",
+    "tamil": "Tamil"
+  },
+  "profile": {
+    "title": "My Profile",
+    "profileInformation": "Profile Information",
+    "edit": "Edit",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "fullName": "Full Name",
+    "phoneNumber": "Phone Number",
+    "address": "Address",
+    "vehicleDetails": "Vehicle Details",
+    "email": "Email",
+    "emailHelper": "Email cannot be changed",
+    "memberSince": "Member Since",
+    "languagePreferences": "Language Preferences",
+    "languageDescription": "Choose your preferred language for the entire application. This setting will be applied across all pages and features.",
+    "selectLanguage": "Select Language",
+    "languageNote": "Your language preference is automatically saved and will persist across all your sessions.",
+    "verified": "Verified",
+    "notifications": "Notifications",
+    "help": "Help & Support",
+    "about": "About SmartRecycle",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "profileUpdateSuccess": "Profile updated successfully!",
+    "profileUpdateError": "Failed to update profile. Please try again."
+  },
+  "userDashboard": {
+    "tabs": {
+      "alerts": "Alerts",
+      "aiClassifier": "AI Classifier",
+      "findCollectors": "Find Collectors",
+      "chatbot": "3R Chatbot",
+      "wasteGuide": "Waste Guide"
+    },
+    "noAlertsMessage": "No waste alerts posted yet. Click the '+' button to create one!"
+  },
+  "wasteGuide": {
+    "reduce": {
+      "title": "Reduce",
+      "description": "Limit disposable products. Opt for reusable bags, bottles, and cutlery."
+    },
+    "refuse": {
+      "title": "Refuse",
+      "description": "Say no to single-use items like plastic straws and unnecessary packaging."
+    },
+    "buyInBulk": {
+      "title": "Buy in Bulk",
+      "description": "Purchase items in larger quantities to significantly cut down on packaging waste."
+    },
+    "recycling": {
+      "title": "Recycling",
+      "description": "Properly sort and process waste materials to create new products and conserve resources."
+    },
+    "digitalization": {
+      "title": "Digitalization",
+      "description": "Embrace digital documents and online bills to drastically reduce paper consumption."
+    }
+  }
+}

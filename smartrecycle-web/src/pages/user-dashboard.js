@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import dynamic from 'next/dynamic';
 import {
   Box,
@@ -53,14 +54,7 @@ import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
 import { supabase } from '../lib/supabaseClient';
 
-// --- Guide data ---
-const guideSteps = [
-  { icon: <RemoveCircleOutline />, title: 'Reduce', description: 'Limit disposable products. Opt for reusable bags, bottles, and cutlery.' },
-  { icon: <Block />, title: 'Refuse', description: 'Say no to single-use items like plastic straws and unnecessary packaging.' },
-  { icon: <ShoppingCart />, title: 'Buy in Bulk', description: 'Purchase items in larger quantities to significantly cut down on packaging waste.' },
-  { icon: <Recycling />, title: 'Recycling', description: 'Properly sort and process waste materials to create new products and conserve resources.' },
-  { icon: <Devices />, title: 'Digitalization', description: 'Embrace digital documents and online bills to drastically reduce paper consumption.' },
-];
+// Guide data will be defined inside the component to access translations
 
 const WasteCollectorMapWithNoSSR = dynamic(
   () => import('../components/WasteCollectorMap'),
@@ -96,8 +90,18 @@ const StyledPaper = (props) => (
 
 export default function UserDashboard() {
   const router = useRouter();
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // --- Guide data with translations ---
+  const guideSteps = [
+    { icon: <RemoveCircleOutline />, title: t('wasteGuide.reduce.title'), description: t('wasteGuide.reduce.description') },
+    { icon: <Block />, title: t('wasteGuide.refuse.title'), description: t('wasteGuide.refuse.description') },
+    { icon: <ShoppingCart />, title: t('wasteGuide.buyInBulk.title'), description: t('wasteGuide.buyInBulk.description') },
+    { icon: <Recycling />, title: t('wasteGuide.recycling.title'), description: t('wasteGuide.recycling.description') },
+    { icon: <Devices />, title: t('wasteGuide.digitalization.title'), description: t('wasteGuide.digitalization.description') },
+  ];
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -344,11 +348,11 @@ export default function UserDashboard() {
               allowScrollButtonsMobile
               sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
-              <Tab label={isMobile ? '' : "Alerts"} icon={<EcoIcon />} />
-              <Tab label={isMobile ? '' : "AI Classifier"} icon={<AnalyticsIcon />} />
-              <Tab label={isMobile ? '' : "Find Collectors"} icon={<MapIcon />} />
-              <Tab label={isMobile ? '' : "3R Chatbot"} icon={<ChatbotIcon />} />
-              <Tab label={isMobile ? '' : "Waste Guide"} icon={<GuideIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.alerts')} icon={<EcoIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.aiClassifier')} icon={<AnalyticsIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.findCollectors')} icon={<MapIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.chatbot')} icon={<ChatbotIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.wasteGuide')} icon={<GuideIcon />} />
             </Tabs>
 
             <TabPanel value={activeTab} index={0}>
@@ -357,7 +361,7 @@ export default function UserDashboard() {
                 {wasteAlerts.length > 0 ? (
                   wasteAlerts.map((alert) => <AlertCard key={alert.id} alert={alert} />)
                 ) : (
-                  !loading && <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>No waste alerts posted yet. Click the '+' button to create one!</Typography>
+                  !loading && <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>{t('userDashboard.noAlertsMessage')}</Typography>
                 )}
               </Stack>
             </TabPanel>

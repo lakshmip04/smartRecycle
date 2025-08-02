@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ import {
   Nature as EcoIcon,
   AdminPanelSettings as AdminIcon, // Added for admin role
   BusinessCenter as CollectorIcon, // Added for collector role
+  Language as LanguageIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -41,6 +43,7 @@ import { loadFull } from 'tsparticles';
 
 // --- Import your DashboardLayout component ---
 import DashboardLayout from '../components/DashboardLayout';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 // --- A reusable styled Paper component to match the theme ---
 const StyledPaper = (props) => (
@@ -61,6 +64,7 @@ const StyledPaper = (props) => (
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // UI State
   const [loading, setLoading] = useState(true);
@@ -153,10 +157,10 @@ export default function ProfilePage() {
       localStorage.setItem('user_data', JSON.stringify(updatedUser));
       setUser(updatedUser);
 
-      setSnackbar({ open: true, message: 'Profile updated successfully!', severity: 'success' });
+      setSnackbar({ open: true, message: t('profile.profileUpdateSuccess'), severity: 'success' });
       setEditing(false);
     } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'error' });
+      setSnackbar({ open: true, message: err.message || t('profile.profileUpdateError'), severity: 'error' });
     } finally {
       setSaving(false);
     }
@@ -223,17 +227,17 @@ export default function ProfilePage() {
                   </Avatar>
                   <Typography variant="h5" fontWeight="bold" sx={{ color: '#2E7D32' }}>{user.profile?.name}</Typography>
                   <Typography variant="body1" color="text.secondary">{user.email}</Typography>
-                  {user.profile?.isVerified && <Chip icon={<VerifiedIcon />} label="Verified" color="success" size="small" sx={{ mt: 1.5 }} />}
+                  {user.profile?.isVerified && <Chip icon={<VerifiedIcon />} label={t('profile.verified')} color="success" size="small" sx={{ mt: 1.5 }} />}
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <List dense>
-                  <ListItemButton><ListItemIcon><NotificationsIcon sx={{ color: '#4CAF50' }} /></ListItemIcon><ListItemText primary="Notifications" /></ListItemButton>
-                  <ListItemButton><ListItemIcon><HelpIcon sx={{ color: '#4CAF50' }} /></ListItemIcon><ListItemText primary="Help & Support" /></ListItemButton>
-                  <ListItemButton><ListItemIcon><InfoIcon sx={{ color: '#4CAF50' }} /></ListItemIcon><ListItemText primary="About EcoDrop" /></ListItemButton>
+                  <ListItemButton><ListItemIcon><NotificationsIcon sx={{ color: '#4CAF50' }} /></ListItemIcon><ListItemText primary={t('profile.notifications')} /></ListItemButton>
+                  <ListItemButton><ListItemIcon><HelpIcon sx={{ color: '#4CAF50' }} /></ListItemIcon><ListItemText primary={t('profile.help')} /></ListItemButton>
+                  <ListItemButton><ListItemIcon><InfoIcon sx={{ color: '#4CAF50' }} /></ListItemIcon><ListItemText primary={t('profile.about')} /></ListItemButton>
                 </List>
                 <Divider sx={{ my: 2 }} />
                 <Button fullWidth variant="outlined" color="error" startIcon={<LogoutIcon />} onClick={() => setLogoutDialog(true)}>
-                  Logout
+                  {t('profile.logout')}
                 </Button>
               </StyledPaper>
             </Grid>
@@ -242,50 +246,90 @@ export default function ProfilePage() {
             <Grid item xs={12} md={8}>
               <StyledPaper>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>Profile Information</Typography>
-                  {!editing && <Button startIcon={<EditIcon />} onClick={() => setEditing(true)} variant="contained" sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>Edit</Button>}
+                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>{t('profile.profileInformation')}</Typography>
+                  {!editing && <Button startIcon={<EditIcon />} onClick={() => setEditing(true)} variant="contained" sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{t('profile.edit')}</Button>}
                 </Box>
                 <Divider sx={{ mb: 3 }} />
                 <Grid container spacing={3}>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label="Full Name" value={editedData.name || ''} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} disabled={!editing} variant="outlined" />
+                    <TextField fullWidth label={t('profile.fullName')} value={editedData.name || ''} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} disabled={!editing} variant="outlined" />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label="Phone Number" value={editedData.phone || ''} onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })} disabled={!editing} variant="outlined" />
+                    <TextField fullWidth label={t('profile.phoneNumber')} value={editedData.phone || ''} onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })} disabled={!editing} variant="outlined" />
                   </Grid>
                   <Grid item xs={12}>
-                    <TextField fullWidth label="Address" multiline rows={2} value={editedData.address || ''} onChange={(e) => setEditedData({ ...editedData, address: e.target.value })} disabled={!editing} variant="outlined" />
+                    <TextField fullWidth label={t('profile.address')} multiline rows={2} value={editedData.address || ''} onChange={(e) => setEditedData({ ...editedData, address: e.target.value })} disabled={!editing} variant="outlined" />
                   </Grid>
                   {user.role === 'COLLECTOR' && (
                     <Grid item xs={12}>
-                      <TextField fullWidth label="Vehicle Details" value={editedData.vehicleDetails || ''} onChange={(e) => setEditedData({ ...editedData, vehicleDetails: e.target.value })} disabled={!editing} variant="outlined" />
+                      <TextField fullWidth label={t('profile.vehicleDetails')} value={editedData.vehicleDetails || ''} onChange={(e) => setEditedData({ ...editedData, vehicleDetails: e.target.value })} disabled={!editing} variant="outlined" />
                     </Grid>
                   )}
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label="Email" value={user.email} disabled variant="filled" helperText="Email cannot be changed" />
+                    <TextField fullWidth label={t('profile.email')} value={user.email} disabled variant="filled" helperText={t('profile.emailHelper')} />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label="Member Since" value={new Date(user.createdAt).toLocaleDateString()} disabled variant="filled" />
+                    <TextField fullWidth label={t('profile.memberSince')} value={new Date(user.createdAt).toLocaleDateString()} disabled variant="filled" />
                   </Grid>
                 </Grid>
                 {editing && (
                   <Box display="flex" gap={2} mt={3}>
                     <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
-                      {saving ? 'Saving...' : 'Save Changes'}
+                      {saving ? t('profile.saving') : t('profile.save')}
                     </Button>
-                    <Button variant="outlined" onClick={handleCancel} disabled={saving}>Cancel</Button>
+                    <Button variant="outlined" onClick={handleCancel} disabled={saving}>{t('profile.cancel')}</Button>
                   </Box>
                 )}
+              </StyledPaper>
+            </Grid>
+
+            {/* Language Preferences Section */}
+            <Grid item xs={12}>
+              <StyledPaper>
+                <Box mb={3}>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <LanguageIcon sx={{ color: '#4CAF50', mr: 1 }} />
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>
+                      {t('profile.languagePreferences')}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" mb={3}>
+                    {t('profile.languageDescription')}
+                  </Typography>
+                  <Divider sx={{ mb: 3 }} />
+                  
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography variant="body1" sx={{ minWidth: '120px' }}>
+                      {t('profile.selectLanguage')}:
+                    </Typography>
+                    <LanguageSwitcher 
+                      variant="outlined" 
+                      showLabel={false}
+                      sx={{ 
+                        '& .MuiFormControl-root': { 
+                          minWidth: '200px',
+                          bgcolor: 'white'
+                        }
+                      }} 
+                    />
+                  </Box>
+                  
+                  <Box mt={2} p={2} sx={{ bgcolor: '#f0f8f0', borderRadius: 2, border: '1px solid #e0f0e0' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      💡 {t('profile.languageNote')}
+                    </Typography>
+                  </Box>
+                </Box>
               </StyledPaper>
             </Grid>
           </Grid>
 
           <Dialog open={logoutDialog} onClose={() => setLogoutDialog(false)}>
-            <DialogTitle>Logout</DialogTitle>
-            <DialogContent><Typography>Are you sure you want to logout?</Typography></DialogContent>
+            <DialogTitle>{t('profile.logout')}</DialogTitle>
+            <DialogContent><Typography>{t('profile.logoutConfirm')}</Typography></DialogContent>
             <DialogActions>
-              <Button onClick={() => setLogoutDialog(false)}>Cancel</Button>
-              <Button onClick={confirmLogout} color="error" variant="contained">Logout</Button>
+              <Button onClick={() => setLogoutDialog(false)}>{t('profile.cancel')}</Button>
+              <Button onClick={confirmLogout} color="error" variant="contained">{t('profile.logout')}</Button>
             </DialogActions>
           </Dialog>
 
