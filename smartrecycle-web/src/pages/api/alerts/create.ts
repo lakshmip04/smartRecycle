@@ -27,7 +27,7 @@ NOTE: For this test, you first need to register/login a HOUSEHOLD user
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, WasteType } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import prisma from '../../../lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
@@ -48,7 +48,7 @@ export default async function handler(
       pickupLatitude,
       pickupLongitude,
       createdById,
-      pickupTimeSlot, // ADDED: Get the time slot from the request
+      pickupTimeSlot,
     } = req.body;
 
     // --- 1. Input Validation ---
@@ -70,15 +70,16 @@ export default async function handler(
       // Create the main alert record
       const alert = await tx.wasteAlert.create({
         data: {
-          wasteType: normalizedWasteType as WasteType,
+          wasteType: wasteType as WasteType,
           description,
           imageUrl,
-          weightEstimate,
+          // FIXED: Ensure weightEstimate is saved as a Float, not a String
+          weightEstimate: parseFloat(weightEstimate),
           pickupAddress,
           pickupLatitude,
           pickupLongitude,
           createdById: user.id,
-          pickupTimeSlot, // ADDED: Save the time slot to the database
+          pickupTimeSlot,
         },
       });
 
