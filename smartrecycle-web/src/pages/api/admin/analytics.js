@@ -7,39 +7,60 @@ export default async function handler(req, res) {
     return res.status(405).end();
   }
 
-  // In a real app, you would add admin role verification here for security.
-
   try {
-    // --- Analytics 1: Waste Collected by Type ---
-    // This query groups all completed alerts by their wasteType
-    // and calculates the sum of the weightEstimate for each type.
+    // --- Chart 1: Waste Collected by Type (Weight) ---
     const wasteByType = await prisma.wasteAlert.groupBy({
       by: ['wasteType'],
-      _sum: {
-        weightEstimate: true,
-      },
-      where: {
-        status: 'COMPLETED',
-      },
+      _sum: { weightEstimate: true },
+      where: { status: 'COMPLETED' },
     });
-
-    // The data from Prisma looks like: [{ wasteType: 'E_WASTE', _sum: { weightEstimate: 50 } }]
-    // We need to format it for the charting library like: [{ name: 'E-Waste', weight: 50 }]
     const formattedWasteData = wasteByType.map(item => ({
-      name: item.wasteType.replace('_', ' '), // Make it more readable
+      name: item.wasteType.replace('_', ' '),
       weight: item._sum.weightEstimate || 0,
     }));
 
+    // --- Chart 2: Collector Specializations ---
+    const collectorProfiles = await prisma.collectorProfile.findMany({
+      select: { acceptedWasteTypes: true },
+    });
+    const typeCounts = {};
+    collectorProfiles.forEach(profile => {
+        profile.acceptedWasteTypes.forEach(type => {
+            const formattedType = type.replace('_', ' ');
+            typeCounts[formattedType] = (typeCounts[formattedType] || 0) + 1;
+        });
+    });
+    const collectorSpecializationData = Object.entries(typeCounts).map(([name, count]) => ({
+      name,
+      count,
+    }));
 
-    // --- Analytics 2: User and Collector Growth Over Time (Example) ---
-    // This is a more advanced query to show how you could track sign-ups over time.
-    // For simplicity, we will just return the waste data for now.
-    // In a real app, you could add more queries here for different charts.
+    // --- Chart 3: Alerts Created Over the Last 30 Days ---
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const alertsOverTime = await prisma.wasteAlert.groupBy({
+        by: ['createdAt'],
+        where: { createdAt: { gte: thirtyDaysAgo } },
+        _count: { id: true },
+        orderBy: { createdAt: 'asc' },
+    });
+    // Format data for the line chart
+    const activityData = alertsOverTime.reduce((acc, record) => {
+        const date = new Date(record.createdAt).toISOString().split('T')[0];
+        const entry = acc.find(e => e.date === date);
+        if (entry) {
+            entry.alerts += record._count.id;
+        } else {
+            acc.push({ date, alerts: record._count.id });
+        }
+        return acc;
+    }, []);
 
 
     res.status(200).json({
       wasteByType: formattedWasteData,
-      // You could add more analytics data here in the future
+      collectorSpecializations: collectorSpecializationData,
+      dailyActivity: activityData,
     });
 
   } catch (error) {

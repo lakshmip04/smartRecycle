@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import dynamic from 'next/dynamic';
@@ -36,7 +36,9 @@ import {
   Person as PersonIcon,
   Upload as UploadIcon,
   Book as GuideIcon,
+  MonetizationOn as IncentiveIcon, // Added for incentive display
 } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 import Confetti from 'react-confetti';
@@ -99,7 +101,7 @@ export default function UserDashboard() {
   const [wasteAlerts, setWasteAlerts] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newAlertData, setNewAlertData] = useState({
-    wasteType: 'GENERAL',
+    wasteType: '',
     description: '',
     weightEstimate: '',
     pickupAddress: '',
@@ -108,6 +110,7 @@ export default function UserDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
+  const [incentives, setIncentives] = useState([]); // ADDED: State to store incentive prices
 
   const userNavItems = [
     { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
@@ -127,21 +130,44 @@ export default function UserDashboard() {
     const parsedUser = JSON.parse(storedUserData);
     setUser(parsedUser);
 
-    const fetchAlerts = async (userId) => {
+    const fetchInitialData = async (userId) => {
       try {
-        const response = await fetch(`/api/users/${userId}/alerts`);
-        if (!response.ok) throw new Error('Failed to fetch alerts.');
-        const data = await response.json();
-        setWasteAlerts(data.alerts);
+        // Fetch both alerts and incentives at the same time
+        const [alertsRes, incentivesRes] = await Promise.all([
+          fetch(`/api/users/${userId}/alerts`),
+          fetch('/api/admin/incentives') // Fetch incentive prices
+        ]);
+
+        if (!alertsRes.ok) throw new Error('Failed to fetch alerts.');
+        if (!incentivesRes.ok) throw new Error('Failed to fetch incentives.');
+
+        const alertsData = await alertsRes.json();
+        const incentivesData = await incentivesRes.json();
+        
+        setWasteAlerts(alertsData.alerts);
+        setIncentives(incentivesData);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    if (parsedUser?.id) fetchAlerts(parsedUser.id);
+
+    if (parsedUser?.id) fetchInitialData(parsedUser.id);
     else setLoading(false);
   }, [router]);
+
+  // ADDED: Calculate estimated incentive in real-time
+  const estimatedIncentive = useMemo(() => {
+    if (!newAlertData.wasteType || !newAlertData.weightEstimate) {
+      return '0.00';
+    }
+    const incentiveRate = incentives.find(i => i.wasteType === newAlertData.wasteType);
+    if (!incentiveRate) {
+      return '0.00';
+    }
+    return (parseFloat(newAlertData.weightEstimate) * incentiveRate.pricePerKg).toFixed(2);
+  }, [newAlertData.wasteType, newAlertData.weightEstimate, incentives]);
 
   // Set window dimensions for confetti
   useEffect(() => {
@@ -231,7 +257,7 @@ export default function UserDashboard() {
         setWasteAlerts([result.alert, ...wasteAlerts]);
         setOpenDialog(false);
         setNewAlertData({
-          wasteType: 'GENERAL',
+          wasteType: '',
           description: '',
           weightEstimate: '',
           pickupAddress: '',
@@ -281,7 +307,7 @@ export default function UserDashboard() {
     // 1. Pre-fill the alert form with info from the chat
     setNewAlertData(prev => ({
       ...prev,
-      wasteType: 'GENERAL', // Set a default, user can refine
+      wasteType: '', // Set a default, user can refine
       description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
       // Reset other fields
       weightEstimate: '',
@@ -408,12 +434,35 @@ export default function UserDashboard() {
             <DialogTitle sx={{ color: '#2E7D32' }}>Post New Waste Alert</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Waste Type</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type"><MenuItem value="GENERAL">General</MenuItem><MenuItem value="RECYCLABLE">Recyclable</MenuItem><MenuItem value="E_WASTE">E-Waste</MenuItem><MenuItem value="ORGANIC">Organic</MenuItem><MenuItem value="HAZARDOUS">Hazardous</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Waste Type</InputLabel>
+                <Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type"><MenuItem value="ORGANIC">Organic</MenuItem>
+                    <MenuItem value="PLASTIC">Plastic</MenuItem>
+                    <MenuItem value="PAPER">Paper</MenuItem>
+                    <MenuItem value="METAL">Metal</MenuItem>
+                    <MenuItem value="GLASS">Glass</MenuItem>
+                    <MenuItem value="E_WASTE">E-Waste</MenuItem>
+                    <MenuItem value="BULBS_LIGHTING">Bulbs/Lighting</MenuItem>
+                    <MenuItem value="CONSTRUCTION_DEBRIS">Construction Debris</MenuItem>
+                    <MenuItem value="SANITARY_WASTE">Sanitary Waste</MenuItem>
+                    <MenuItem value="MEDICAL">Medical</MenuItem>
+                    <MenuItem value="GENERAL">Other Dry Waste (General)</MenuItem>
+                    </Select></FormControl></Grid>
                 <Grid item xs={12} sm={6}><TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
                 <Grid item xs={12}><TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
                 <Grid item xs={12}><FormControl fullWidth><InputLabel>Preferred Pickup Time Slot</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label="Preferred Pickup Time Slot"><MenuItem value="9am-12pm">Morning (9 AM - 12 PM)</MenuItem><MenuItem value="12pm-3pm">Afternoon (12 PM - 3 PM)</MenuItem><MenuItem value="3pm-6pm">Evening (3 PM - 6 PM)</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12}><TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
                 <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? `Selected: ${imageFile.name}` : 'Upload Image (Optional)'}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
+                <Grid item xs={12}>
+                  <Paper variant="outlined" sx={{ p: 2, mt: 1, textAlign: 'center', borderColor: 'primary.main' }}>
+                      <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <IncentiveIcon color="primary" />
+                          Estimated Incentive Value: 
+                          <Typography component="span" variant="h6" color="primary.main" fontWeight="bold">
+                              ₹{estimatedIncentive}
+                          </Typography>
+                      </Typography>
+                  </Paper>
+                </Grid>
               </Grid>
             </DialogContent>
             <DialogActions>

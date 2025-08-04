@@ -11,6 +11,7 @@ import {
   Chip,
   List,
   ListItemButton,
+  ListItem,
   ListItemIcon,
   ListItemText,
   Dialog,
@@ -33,9 +34,12 @@ import {
   Info as InfoIcon,
   Logout as LogoutIcon,
   Nature as EcoIcon,
-  AdminPanelSettings as AdminIcon, // Added for admin role
-  BusinessCenter as CollectorIcon, // Added for collector role
+  AdminPanelSettings as AdminIcon,
+  BusinessCenter as CollectorIcon,
   Language as LanguageIcon,
+  Business as BusinessIcon,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -107,7 +111,7 @@ export default function ProfilePage() {
       { name: 'Dashboard', path: getDashboardPath(user.role), icon: getDashboardIcon(user.role) },
       { name: 'My Profile', path: '/profile', icon: <PersonIcon /> },
     ];
-  }, [user]); // This will re-calculate only when the user object changes
+  }, [user]);
 
   const particlesInit = async (main) => {
     await loadFull(main);
@@ -244,83 +248,93 @@ export default function ProfilePage() {
 
             {/* Right Column: Profile Details Form */}
             <Grid item xs={12} md={8}>
-              <StyledPaper>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                  <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>{t('profile.profileInformation')}</Typography>
-                  {!editing && <Button startIcon={<EditIcon />} onClick={() => setEditing(true)} variant="contained" sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{t('profile.edit')}</Button>}
-                </Box>
-                <Divider sx={{ mb: 3 }} />
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label={t('profile.fullName')} value={editedData.name || ''} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} disabled={!editing} variant="outlined" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label={t('profile.phoneNumber')} value={editedData.phone || ''} onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })} disabled={!editing} variant="outlined" />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField fullWidth label={t('profile.address')} multiline rows={2} value={editedData.address || ''} onChange={(e) => setEditedData({ ...editedData, address: e.target.value })} disabled={!editing} variant="outlined" />
-                  </Grid>
-                  {user.role === 'COLLECTOR' && (
-                    <Grid item xs={12}>
-                      <TextField fullWidth label={t('profile.vehicleDetails')} value={editedData.vehicleDetails || ''} onChange={(e) => setEditedData({ ...editedData, vehicleDetails: e.target.value })} disabled={!editing} variant="outlined" />
-                    </Grid>
-                  )}
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label={t('profile.email')} value={user.email} disabled variant="filled" helperText={t('profile.emailHelper')} />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField fullWidth label={t('profile.memberSince')} value={new Date(user.createdAt).toLocaleDateString()} disabled variant="filled" />
-                  </Grid>
-                </Grid>
-                {editing && (
-                  <Box display="flex" gap={2} mt={3}>
-                    <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
-                      {saving ? t('profile.saving') : t('profile.save')}
-                    </Button>
-                    <Button variant="outlined" onClick={handleCancel} disabled={saving}>{t('profile.cancel')}</Button>
+              <Stack spacing={3}>
+                <StyledPaper>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>{t('profile.profileInformation')}</Typography>
+                    {!editing && <Button startIcon={<EditIcon />} onClick={() => setEditing(true)} variant="contained" sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{t('profile.edit')}</Button>}
                   </Box>
-                )}
-              </StyledPaper>
-            </Grid>
-
-            {/* Language Preferences Section */}
-            <Grid item xs={12}>
-              <StyledPaper>
-                <Box mb={3}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <LanguageIcon sx={{ color: '#4CAF50', mr: 1 }} />
-                    <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>
-                      {t('profile.languagePreferences')}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" mb={3}>
-                    {t('profile.languageDescription')}
-                  </Typography>
                   <Divider sx={{ mb: 3 }} />
-                  
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Typography variant="body1" sx={{ minWidth: '120px' }}>
-                      {t('profile.selectLanguage')}:
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}><TextField fullWidth label={t('profile.fullName')} value={editedData.name || ''} onChange={(e) => setEditedData({ ...editedData, name: e.target.value })} disabled={!editing} variant="outlined" /></Grid>
+                    <Grid item xs={12} sm={6}><TextField fullWidth label={t('profile.phoneNumber')} value={editedData.phone || ''} onChange={(e) => setEditedData({ ...editedData, phone: e.target.value })} disabled={!editing} variant="outlined" /></Grid>
+                    <Grid item xs={12}><TextField fullWidth label={t('profile.address')} multiline rows={2} value={editedData.address || ''} onChange={(e) => setEditedData({ ...editedData, address: e.target.value })} disabled={!editing} variant="outlined" /></Grid>
+                    {user.role === 'COLLECTOR' && (<Grid item xs={12}><TextField fullWidth label={t('profile.vehicleDetails')} value={editedData.vehicleDetails || ''} onChange={(e) => setEditedData({ ...editedData, vehicleDetails: e.target.value })} disabled={!editing} variant="outlined" /></Grid>)}
+                    <Grid item xs={12} sm={6}><TextField fullWidth label={t('profile.email')} value={user.email} disabled variant="filled" helperText={t('profile.emailHelper')} /></Grid>
+                    <Grid item xs={12} sm={6}><TextField fullWidth label={t('profile.memberSince')} value={new Date(user.createdAt).toLocaleDateString()} disabled variant="filled" /></Grid>
+                  </Grid>
+                  {editing && (
+                    <Box display="flex" gap={2} mt={3}>
+                      <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
+                        {saving ? t('profile.saving') : t('profile.save')}
+                      </Button>
+                      <Button variant="outlined" onClick={handleCancel} disabled={saving}>{t('profile.cancel')}</Button>
+                    </Box>
+                  )}
+                </StyledPaper>
+
+                <StyledPaper>
+                  <Box mb={3}>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <LanguageIcon sx={{ color: '#4CAF50', mr: 1 }} />
+                      <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>
+                        {t('profile.languagePreferences')}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" mb={3}>
+                      {t('profile.languageDescription')}
                     </Typography>
-                    <LanguageSwitcher 
-                      variant="outlined" 
-                      showLabel={false}
-                      sx={{ 
-                        '& .MuiFormControl-root': { 
-                          minWidth: '200px',
-                          bgcolor: 'white'
-                        }
-                      }} 
-                    />
+                    <Divider sx={{ mb: 3 }} />
+                    
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography variant="body1" sx={{ minWidth: '120px' }}>
+                        {t('profile.selectLanguage')}:
+                      </Typography>
+                      <LanguageSwitcher 
+                        variant="outlined" 
+                        showLabel={false}
+                        sx={{ 
+                          '& .MuiFormControl-root': { 
+                            minWidth: '200px',
+                            bgcolor: 'white'
+                          }
+                        }} 
+                      />
+                    </Box>
+                    
+                    <Box mt={2} p={2} sx={{ bgcolor: '#f0f8f0', borderRadius: 2, border: '1px solid #e0f0e0' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        💡 {t('profile.languageNote')}
+                      </Typography>
+                    </Box>
                   </Box>
-                  
-                  <Box mt={2} p={2} sx={{ bgcolor: '#f0f8f0', borderRadius: 2, border: '1px solid #e0f0e0' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      💡 {t('profile.languageNote')}
-                    </Typography>
-                  </Box>
-                </Box>
-              </StyledPaper>
+                </StyledPaper>
+
+                {/* ADDED: Customer Care Section */}
+                <StyledPaper>
+                    <Box display="flex" alignItems="center" mb={2}>
+                        <HelpIcon sx={{ color: '#4CAF50', mr: 1 }} />
+                        <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>
+                            Customer Care
+                        </Typography>
+                    </Box>
+                    <Divider sx={{ mb: 2 }} />
+                    <List dense>
+                        <ListItem>
+                            <ListItemIcon><BusinessIcon /></ListItemIcon>
+                            <ListItemText primary="EcoDrop Headquarters" secondary="Hitech City, Hyderabad, Telangana, 500081" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemIcon><PhoneIcon /></ListItemIcon>
+                            <ListItemText primary="Support Hotline" secondary="+91 40 1234 5678" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemIcon><EmailIcon /></ListItemIcon>
+                            <ListItemText primary="Support Email" secondary="support@ecodrop.com" />
+                        </ListItem>
+                    </List>
+                </StyledPaper>
+              </Stack>
             </Grid>
           </Grid>
 

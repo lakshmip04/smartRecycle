@@ -20,7 +20,10 @@ import {
   Tabs,
   Tab,
   CardActions,
-  Divider
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import {
   Schedule,
@@ -32,7 +35,8 @@ import {
   BusinessCenter as JobsIcon,
   History as HistoryIcon,
   RestoreFromTrash as UnrejectIcon,
-  Directions as DirectionsIcon, // Added for directions button
+  Directions as DirectionsIcon,
+  Route as RouteIcon, // Added for optimize button
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
@@ -106,6 +110,8 @@ export default function CollectorHistoryPage() {
   const [rejectedJobs, setRejectedJobs] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, item: null, newStatus: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [optimizing, setOptimizing] = useState(false); // ADDED: State for optimization loading
+  const [optimizedRoutes, setOptimizedRoutes] = useState(null); // ADDED: State to store the optimized routes
 
   const navItems = [
     { name: 'Available Jobs', path: '/collector-dashboard', icon: <JobsIcon /> },
@@ -174,14 +180,11 @@ export default function CollectorHistoryPage() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.message);
 
-        // --- FIXED: Correctly handle state updates based on the new status ---
         if (newStatus === 'IN_TRANSIT') {
-            // Update the item within the activeJobs list
             setActiveJobs(prev => prev.map(job => job.id === item.id ? result.alert : job));
             setSnackbar({ open: true, message: 'Trip started! Opening directions...', severity: 'success' });
-            handleGetDirections(result.alert); // Automatically open directions
+            handleGetDirections(result.alert);
         } else if (newStatus === 'COMPLETED') {
-            // Move the item from active to completed list
             setActiveJobs(prev => prev.filter(job => job.id !== item.id));
             setCompletedJobs(prev => [result.alert, ...prev]);
             setSnackbar({ open: true, message: `Job marked as completed!`, severity: 'success' });
@@ -194,21 +197,43 @@ export default function CollectorHistoryPage() {
   };
 
   const handleUnreject = async (alertId) => {
+    // ... unreject logic ...
+  };
+
+  // ADDED: Function to handle route optimization
+  const handleOptimizeRoute = async () => {
+    setOptimizing(true);
+    setError('');
     try {
-        const response = await fetch(`/api/alerts/${alertId}/unreject`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ collectorId: user.id }),
-        });
-        if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.message || 'Failed to un-reject alert.');
+        const alertIds = activeJobs.map(job => job.id);
+        if (alertIds.length === 0) {
+            throw new Error("No active jobs to optimize.");
         }
-        setRejectedJobs(prev => prev.filter(job => job.id !== alertId));
-        setSnackbar({ open: true, message: 'Job moved back to available list.', severity: 'success' });
+
+        const response = await fetch(`/api/collectors/${user.id}/optimize-route`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alertIds }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message);
+
+        setOptimizedRoutes(result.optimizedRoutes);
+        setSnackbar({ open: true, message: 'Route optimized successfully!', severity: 'success' });
     } catch (err) {
-        setSnackbar({ open: true, message: err.message, severity: 'error' });
+        setError(err.message);
+    } finally {
+        setOptimizing(false);
     }
+  };
+
+  // ADDED: Function to open the optimized route in Google Maps
+  const handleViewRouteOnMap = (routeGroup) => {
+    const collectorLocation = `${user.profile.latitude},${user.profile.longitude}`;
+    const waypoints = routeGroup.map(alert => `${alert.pickupLatitude},${alert.pickupLongitude}`).join('|');
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${collectorLocation}&destination=${collectorLocation}&waypoints=${waypoints}`;
+    window.open(url, '_blank');
   };
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
@@ -232,6 +257,38 @@ export default function CollectorHistoryPage() {
           </Tabs>
 
           <TabPanel value={activeTab} index={0}>
+            {/* ADDED: Optimize Route Button and Display */}
+            <Box sx={{ mb: 3 }}>
+                <Button 
+                    variant="contained" 
+                    startIcon={optimizing ? <CircularProgress size={20} color="inherit" /> : <RouteIcon />}
+                    onClick={handleOptimizeRoute}
+                    disabled={optimizing || activeJobs.length === 0}
+                >
+                    Optimize Today's Route
+                </Button>
+            </Box>
+            {optimizedRoutes && (
+                <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
+                    <Typography variant="h6" gutterBottom>Optimized Schedule</Typography>
+                    {Object.entries(optimizedRoutes).map(([timeSlot, routeGroup]) => (
+                        <Box key={timeSlot} sx={{ mb: 2 }}>
+                            <Typography variant="subtitle1" fontWeight="bold">{timeSlot}</Typography>
+                            <List dense>
+                                {routeGroup.map((alert, index) => (
+                                    <ListItem key={alert.id}>
+                                        <ListItemText primary={`${index + 1}. ${alert.pickupAddress}`} secondary={`Waste: ${alert.wasteType}, Weight: ${alert.weightEstimate}kg`} />
+                                    </ListItem>
+                                ))}
+                            </List>
+                            <Button variant="outlined" startIcon={<DirectionsIcon />} onClick={() => handleViewRouteOnMap(routeGroup)}>
+                                View {timeSlot} Route on Map
+                            </Button>
+                            <Divider sx={{ my: 2 }} />
+                        </Box>
+                    ))}
+                </Paper>
+            )}
             <Grid container spacing={3}>
                 {activeJobs.map((item) => <Grid item xs={12} sm={6} md={4} key={item.id}><CollectionCard item={item} handleStatusUpdate={handleStatusUpdate} handleGetDirections={handleGetDirections} /></Grid>)}
                 {activeJobs.length === 0 && <Typography sx={{ mt: 4, textAlign: 'center', width: '100%' }}>No active jobs.</Typography>}

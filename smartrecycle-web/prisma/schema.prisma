@@ -4,9 +4,7 @@
 // 1. Set up the datasource to connect to your PostgreSQL database via Supabase.
 datasource db {
   provider  = "postgresql"
-  // The connection pooler URL for your application's runtime
   url       = env("DATABASE_URL")
-  // The direct database URL for migrations and `db push`
   directUrl = env("DIRECT_URL")
 }
 
@@ -41,6 +39,19 @@ enum WasteType {
   HAZARDOUS
   CONSTRUCTION_DEBRIS
   MEDICAL
+  PLASTIC
+  PAPER
+  METAL
+  GLASS
+  BULBS_LIGHTING
+  SANITARY_WASTE
+}
+
+// ADDED: Enum for the status of a problem report
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
 }
 
 
@@ -60,6 +71,9 @@ model User {
   collectorProfile CollectorProfile?
   alertsCreated    WasteAlert[]      @relation("AlertsCreatedByUser")
   reviewsGiven     Review[]          @relation("ReviewsGivenByUser")
+  
+  // ADDED: A user can submit many problem reports
+  problemReports   ProblemReport[]   @relation("ReportedByUser")
 }
 
 model HouseholdProfile {
@@ -100,7 +114,9 @@ model WasteAlert {
   pickupAddress   String      @db.Text
   pickupLatitude  Float
   pickupLongitude Float
-  pickupTimeSlot  String?     // ADDED: Field for preferred pickup time slot
+  pickupTimeSlot  String?
+  finalWeight     Float?
+  finalValue      Float?
   createdById     String
   createdBy       User        @relation("AlertsCreatedByUser", fields: [createdById], references: [id])
   claimedById     String?
@@ -110,6 +126,16 @@ model WasteAlert {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   rejectedBy      AlertRejection[]
+
+  // ADDED: An alert can have many problem reports
+  problemReports ProblemReport[]
+}
+
+model Incentive {
+    id String @id @default(cuid())
+    wasteType WasteType @unique
+    pricePerKg Float
+    updatedAt DateTime @updatedAt
 }
 
 model AlertRejection {
@@ -120,6 +146,23 @@ model AlertRejection {
     collector CollectorProfile @relation(fields: [collectorId], references: [id], onDelete: Cascade)
     createdAt DateTime @default(now())
     @@unique([alertId, collectorId])
+}
+
+// ADDED: New model to store problem reports
+model ProblemReport {
+    id String @id @default(cuid())
+    description String @db.Text
+    status ReportStatus @default(OPEN)
+
+    // Relation to the alert the report is about
+    alertId String
+    alert WasteAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+    // Relation to the user who submitted the report
+    reportedById String
+    reportedBy User @relation("ReportedByUser", fields: [reportedById], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
 }
 
 model StatusLog {

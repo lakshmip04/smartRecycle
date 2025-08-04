@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { useTranslation } from 'react-i18next'; // Import translation hook
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -16,14 +16,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
-// NOTE: Ensure this path is correct for your project structure
-import LanguageSwitcher from '../components/LanguageSwitcher'; 
-
-// This is now your main Login Page component
 export default function LoginPage() {
-  // --- State and Hooks ---
-  const { t } = useTranslation(); // Initialize translation hook
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('HOUSEHOLD');
@@ -32,12 +28,12 @@ export default function LoginPage() {
   const [fadeOut, setFadeOut] = useState(false);
   const router = useRouter();
 
-  // --- Particle Engine Initialization ---
+  const isAdminLogin = email.toLowerCase() === 'admin@smartrecycle.com';
+
   const particlesInit = async (main) => {
     await loadFull(main);
   };
 
-  // --- Helper Functions ---
   const getRedirectPath = (userRole) => {
     switch (userRole) {
       case 'ADMIN':
@@ -51,7 +47,6 @@ export default function LoginPage() {
     }
   };
 
-  // --- Event Handlers ---
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -69,14 +64,19 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('Login successful:', data.user);
+        console.log('Backend returned user role:', data.user.role);
         
         localStorage.setItem('user_data', JSON.stringify(data.user));
-        localStorage.setItem('selected_role', role);
+        
+        // MODIFIED: Only set the selected_role if the user is NOT an admin
+        if (data.user.role !== 'ADMIN') {
+            localStorage.setItem('selected_role', role);
+        }
         
         setFadeOut(true);
         setTimeout(() => {
           const redirectPath = getRedirectPath(data.user.role);
+          console.log('Redirecting to:', redirectPath);
           router.push(redirectPath);
         }, 800);
 
@@ -85,7 +85,6 @@ export default function LoginPage() {
         setLoading(false);
       }
     } catch (err) {
-      // Use translation for network error
       setError(t('auth.networkError', 'Could not connect to the server. Please try again later.'));
       setLoading(false);
     }
@@ -144,16 +143,13 @@ export default function LoginPage() {
                 }}
               >
                 <Typography variant="h3" gutterBottom sx={{ color: '#4CAF50', fontWeight: 'bold' }}>
-                  {/* Translated App Name */}
                   {t('auth.appName', 'Ecodrop')} 
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
-                  {/* Translated Subtitle */}
                   {t('auth.loginTitle', 'Login to continue')}
                 </Typography>
 
-                {/* --- Language Switcher Added --- */}
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                   <LanguageSwitcher />
                 </Box>
@@ -165,22 +161,22 @@ export default function LoginPage() {
                     </Alert>
                   )}
 
-                  <ToggleButtonGroup
-                    color="primary"
-                    value={role}
-                    exclusive
-                    onChange={(e, newRole) => { if (newRole) setRole(newRole);}}
-                    fullWidth
-                    sx={{ mb: 2 }}
-                  >
-                    {/* Translated Roles */}
-                    <ToggleButton value="HOUSEHOLD">{t('auth.roleUser', '👤 User')}</ToggleButton>
-                    <ToggleButton value="COLLECTOR">{t('auth.roleCollector', '🚛 Collector')}</ToggleButton>
-                  </ToggleButtonGroup>
+                  {!isAdminLogin && (
+                    <ToggleButtonGroup
+                      color="primary"
+                      value={role}
+                      exclusive
+                      onChange={(e, newRole) => { if (newRole) setRole(newRole);}}
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    >
+                      <ToggleButton value="HOUSEHOLD">{t('auth.roleUser', '👤 User')}</ToggleButton>
+                      <ToggleButton value="COLLECTOR">{t('auth.roleCollector', '🚛 Collector')}</ToggleButton>
+                    </ToggleButtonGroup>
+                  )}
 
                   <TextField
                     fullWidth
-                    // Translated Label
                     label={t('auth.emailAddress', 'Email Address')}
                     type="email"
                     value={email}
@@ -192,7 +188,6 @@ export default function LoginPage() {
 
                   <TextField
                     fullWidth
-                    // Translated Label
                     label={t('auth.password', 'Password')}
                     type="password"
                     value={password}
@@ -216,7 +211,6 @@ export default function LoginPage() {
                       '&:hover': { backgroundColor: '#2E7D32' }
                     }}
                   >
-                    {/* Translated Button Text */}
                     {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.signIn', 'Sign In')}
                   </Button>
                   <Button
@@ -234,7 +228,6 @@ export default function LoginPage() {
                       }
                     }}
                   >
-                    {/* Translated Button Text */}
                     {t('auth.newHereRegister', 'New here? Register')}
                   </Button>
                 </Box>

@@ -1,48 +1,40 @@
-// This is your "Route Optimization" API route.
-// Final path: `pages/api/collectors/[collectorId]/optimize-route.ts`
-
-/*
---- HOW TO TEST ---
-
-1. Claim several alerts with a single collector. Note the collector's USER ID
-   and the IDs of the alerts they claimed.
-2. In Postman, create a new request:
-   - Method: POST
-   - URL: http://localhost:3000/api/collectors/[PASTE_COLLECTOR_USER_ID_HERE]/optimize-route
-3. Go to the "Body" tab, select "raw" and "JSON", and add the list of alert IDs:
-   {
-       "alertIds": [
-           "[PASTE_ALERT_ID_1]",
-           "[PASTE_ALERT_ID_2]",
-           "[PASTE_ALERT_ID_3]"
-       ]
-   }
-4. Send the request. You should get a 200 OK response with the same alerts,
-   but now in an optimized order for pickup.
-
-*/
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// --- Placeholder for Google Maps API Integration ---
-// In a real application, this function would make a call to the Google Maps
-// Directions API with the collector's start location and all the pickup
-// locations as waypoints, asking for the optimized order.
+// This function makes a real call to the Google Maps Directions API
 async function getOptimizedRoute(
   start: { lat: number; lng: number },
   waypoints: { id: string; lat: number; lng: number }[]
 ) {
-  console.log("Simulating Google Maps API call for route optimization...");
+  // If there are no waypoints for a group, no need to call the API
+  if (waypoints.length === 0) {
+    return [];
+  }
 
-  // For this example, we will just simulate the result by shuffling the waypoints.
-  // A real implementation would return an array of waypoint IDs in the optimized order.
-  const optimizedOrder = waypoints.sort(() => Math.random() - 0.5);
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    throw new Error("Google Maps API key is not configured.");
+  }
+
+  const origin = `${start.lat},${start.lng}`;
+  const destination = origin; // Round trip
+  const waypointsString = waypoints.map(wp => `${wp.lat},${wp.lng}`).join('|');
+
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=optimize:true|${waypointsString}&key=${apiKey}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (data.status !== 'OK' || !data.routes || data.routes.length === 0) {
+    throw new Error(`Google Maps API error: ${data.error_message || data.status}`);
+  }
+
+  const optimizedOrderIndexes = data.routes[0].waypoint_order;
+  const optimizedWaypoints = optimizedOrderIndexes.map(index => waypoints[index]);
   
-  console.log("Optimized order determined:", optimizedOrder.map(wp => wp.id));
-  return optimizedOrder;
+  return optimizedWaypoints;
 }
 
 
@@ -72,12 +64,12 @@ export default async function handler(
       return res.status(404).json({ message: 'Collector profile not found or is missing location data.' });
     }
 
-    // --- 2. Fetch Details for the Selected Alerts ---
+    // --- 2. Fetch Details for ALL Selected Alerts ---
     const alerts = await prisma.wasteAlert.findMany({
       where: {
         id: { in: alertIds },
-        claimedById: collectorProfile.id, // Security check: ensure alerts belong to this collector
-        status: 'CLAIMED', // Can only optimize routes for claimed, not-yet-serviced alerts
+        claimedById: collectorProfile.id,
+        status: 'CLAIMED',
       },
     });
 
@@ -85,30 +77,49 @@ export default async function handler(
         return res.status(404).json({ message: 'One or more alerts could not be found, do not belong to you, or are not in "CLAIMED" status.' });
     }
 
-    // --- 3. Prepare Data for Optimization API ---
+    // --- 3. Group Alerts by Time Slot ---
+    const alertsByTimeSlot = alerts.reduce((acc, alert) => {
+        const slot = alert.pickupTimeSlot || 'Unspecified';
+        if (!acc[slot]) {
+            acc[slot] = [];
+        }
+        acc[slot].push(alert);
+        return acc;
+    }, {} as Record<string, typeof alerts>);
+
+
+    // --- 4. Optimize Route for EACH Time Slot Group ---
+    const optimizedRoutesByTimeSlot = {};
     const startPoint = { lat: collectorProfile.latitude, lng: collectorProfile.longitude };
-    const waypoints = alerts.map(alert => ({
-      id: alert.id,
-      lat: alert.pickupLatitude,
-      lng: alert.pickupLongitude,
-    }));
 
-    // --- 4. Get Optimized Route ---
-    const optimizedWaypoints = await getOptimizedRoute(startPoint, waypoints);
+    for (const slot in alertsByTimeSlot) {
+        const groupOfAlerts = alertsByTimeSlot[slot];
+        
+        const waypoints = groupOfAlerts.map(alert => ({
+            id: alert.id,
+            lat: alert.pickupLatitude,
+            lng: alert.pickupLongitude,
+        }));
 
-    // --- 5. Reorder the original alert objects based on the optimized result ---
-    const orderedAlerts = optimizedWaypoints.map(waypoint => {
-        return alerts.find(alert => alert.id === waypoint.id);
-    });
+        const optimizedWaypoints = await getOptimizedRoute(startPoint, waypoints);
 
-    // --- 6. Return the Optimized List ---
+        // Reorder the original alert objects based on the optimized result for this group
+        const orderedAlerts = optimizedWaypoints.map(waypoint => {
+            return groupOfAlerts.find(alert => alert.id === waypoint.id);
+        });
+
+        optimizedRoutesByTimeSlot[slot] = orderedAlerts;
+    }
+
+
+    // --- 5. Return the Grouped and Optimized Routes ---
     return res.status(200).json({
-      message: 'Route optimized successfully.',
-      optimizedAlerts: orderedAlerts,
+      message: 'Routes optimized successfully by time slot.',
+      optimizedRoutes: optimizedRoutesByTimeSlot,
     });
 
   } catch (error: any) {
     console.error("Route Optimization Error:", error);
-    return res.status(500).json({ message: 'An error occurred on the server.' });
+    return res.status(500).json({ message: error.message || 'An error occurred on the server.' });
   }
 }
