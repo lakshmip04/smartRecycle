@@ -34,7 +34,9 @@ import {
   Nature,
   Warning,
   Science,
+  LocationOn,
 } from '@mui/icons-material';
+import LocationAutocomplete from './LocationAutocomplete';
 
 const WasteClassifier = ({ onClassificationComplete, showInternalResults = true }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -52,6 +54,14 @@ const WasteClassifier = ({ onClassificationComplete, showInternalResults = true 
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
   const [resultKey, setResultKey] = useState(0); // Add a key to force re-render
+  
+  // Location state management
+  const [locationData, setLocationData] = useState({
+    address: '',
+    latitude: null,
+    longitude: null
+  });
+  const [showLocationSection, setShowLocationSection] = useState(false);
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -76,7 +86,7 @@ Return your answer in this JSON format:
   "environmental_impact": "High - takes 450+ years to decompose"
 }
 
-IMPORTANT: If you detect a human in the image, respond with:
+IMPORTANT: If you detect a human with eyes and face in the image, respond with:
 {
   "waste_type": "human",
   "biodegradability": "biodegradable",
@@ -278,7 +288,8 @@ Only return the JSON.
         console.log("📤 Calling onClassificationComplete with result");
         onClassificationComplete({
           image: selectedImage,
-          classification: result
+          classification: result,
+          location: locationData
         });
       }
     } catch (error) {
@@ -331,6 +342,14 @@ Only return the JSON.
     return icons[wasteType] || '♻️';
   };
 
+  const handleLocationSelect = (location) => {
+    setLocationData({
+      address: location.description,
+      latitude: location.latitude,
+      longitude: location.longitude
+    });
+  };
+
   const resetClassifier = () => {
     setSelectedImage(null);
     setImagePreview(null);
@@ -341,6 +360,12 @@ Only return the JSON.
         recycling_instructions: '',
         environmental_impact: ''
     });
+    setLocationData({
+      address: '',
+      latitude: null,
+      longitude: null
+    });
+    setShowLocationSection(false);
     setError('');
     stopCamera();
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -484,11 +509,29 @@ Only return the JSON.
                 />
               </Paper>
 
+              {/* Location Selection Section */}
+              <Box sx={{ mt: 3, textAlign: 'left', maxWidth: '500px', mx: 'auto' }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>
+                  <LocationOn sx={{ mr: 1 }} />
+                  Pickup Location
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Select the location where this waste item is located for pickup
+                </Typography>
+                <LocationAutocomplete
+                  value={locationData.address}
+                  onSelect={handleLocationSelect}
+                  label="Pickup Address"
+                  placeholder="Enter pickup address..."
+                  required={true}
+                />
+              </Box>
+
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
                   onClick={classifyWaste}
-                  disabled={loading}
+                  disabled={loading || !locationData.address}
                   startIcon={loading ? <CircularProgress size={20} /> : <Recycling />}
                   sx={{ mr: 1 }}
                 >

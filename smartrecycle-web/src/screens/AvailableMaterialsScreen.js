@@ -267,6 +267,7 @@ const AvailableMaterialsScreen = () => {
       recycling_instructions: classificationData.classification.recycling_instructions,
       environmental_impact: classificationData.classification.environmental_impact,
       image: URL.createObjectURL(classificationData.image),
+      location: classificationData.location || null,
     };
     
     console.log('Setting aiClassificationResult to:', result);
@@ -298,6 +299,13 @@ const AvailableMaterialsScreen = () => {
         environmental_impact: aiClassificationResult.environmental_impact
       };
 
+      // Use location data from classification if available, otherwise use defaults
+      const locationData = aiClassificationResult.location || {};
+      const coordinates = locationData.latitude && locationData.longitude 
+        ? [locationData.latitude, locationData.longitude] 
+        : [12.9716, 77.5946];
+      const address = locationData.address || 'Location to be provided by user';
+
       const newMaterial = {
         id: materials.length + 1,
         title: `AI Classified: ${aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1)}`,
@@ -305,8 +313,8 @@ const AvailableMaterialsScreen = () => {
         description: `AI-classified material. ${aiClassificationResult.recycling_instructions || 'No specific instructions provided.'}`,
         wasteType: aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1),
         weight: '0 kg', // User should input this when posting
-        location: [12.9716, 77.5946], // Default to Bengaluru coordinates - should be user input
-        address: 'Location to be provided by user',
+        location: coordinates,
+        address: address,
         distance: 'N/A',
         postedBy: 'AI Classification (Collector)',
         userName: 'Collector (AI Assist)',

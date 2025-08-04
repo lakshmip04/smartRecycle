@@ -140,7 +140,11 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat, initialMessage = ''
   const sendAudioToSTT = async (audioBlob) => {
     try {
       setIsLoading(true);
-      const apiKey = "cf04a6d0b99f4c098c0023ad9ac9f128";
+      const apiKey = process.env.NEXT_PUBLIC_ASSEMBLY_AI_API_KEY;
+
+      if (!apiKey) {
+        throw new Error('Assembly AI API key not configured');
+      }
 
       const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
         method: 'POST',

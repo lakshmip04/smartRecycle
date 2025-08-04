@@ -100,6 +100,8 @@ export default function UserDashboard() {
     weightEstimate: '',
     pickupAddress: '',
     pickupTimeSlot: '',
+    pickupLatitude: null,
+    pickupLongitude: null,
   });
   const [imageFile, setImageFile] = useState(null);
 
@@ -175,7 +177,11 @@ export default function UserDashboard() {
       }
     }
 
-    const placeholderCoords = { lat: 12.9716, lng: 77.5946 };
+    // Use location coordinates from classification if available, otherwise use placeholder
+    const coords = {
+      lat: newAlertData.pickupLatitude || 12.9716,
+      lng: newAlertData.pickupLongitude || 77.5946
+    };
 
     try {
       const response = await fetch('/api/alerts/create', {
@@ -185,8 +191,8 @@ export default function UserDashboard() {
           ...newAlertData,
           weightEstimate: parseFloat(newAlertData.weightEstimate),
           createdById: user.id,
-          pickupLatitude: placeholderCoords.lat,
-          pickupLongitude: placeholderCoords.lng,
+          pickupLatitude: coords.lat,
+          pickupLongitude: coords.lng,
           imageUrl: imageUrl,
         }),
       });
@@ -202,6 +208,8 @@ export default function UserDashboard() {
           weightEstimate: '',
           pickupAddress: '',
           pickupTimeSlot: '',
+          pickupLatitude: null,
+          pickupLongitude: null,
         });
         setImageFile(null);
       } else {
@@ -215,11 +223,28 @@ export default function UserDashboard() {
   };
 
   const handleClassificationComplete = (classificationData) => {
-    setNewAlertData(prev => ({
-      ...prev,
-      description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
-      wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
-    }));
+    // Set the image file from the classification
+    if (classificationData.image) {
+      setImageFile(classificationData.image);
+    }
+    
+    // Set the location data if available
+    if (classificationData.location && classificationData.location.address) {
+      setNewAlertData(prev => ({
+        ...prev,
+        pickupAddress: classificationData.location.address,
+        pickupLatitude: classificationData.location.latitude,
+        pickupLongitude: classificationData.location.longitude,
+        description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
+        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+      }));
+    } else {
+      setNewAlertData(prev => ({
+        ...prev,
+        description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
+        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+      }));
+    }
     setOpenDialog(true);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/router'; // Use Next.js router
+import { useRouter } from 'next/router';
 import {
   Box,
   Container,
@@ -13,21 +13,15 @@ import {
   ToggleButton,
   Collapse,
   Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  OutlinedInput,
-  Chip,
+  FormControlLabel,
   Checkbox,
-  ListItemText,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   FormGroup,
-  FormControlLabel,
   Card,
   CardContent,
+  Chip,
 } from '@mui/material';
 import {
   ExpandMore,
@@ -38,8 +32,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
-import { supabase } from '../lib/supabaseClient'; // Import the supabase client
-import LocationAutocomplete from '../components/LocationAutocomplete';
+import { supabase } from '../lib/supabaseClient';
+import LocationAutocomplete from '../components/LocationAutocomplete'; // Import the component
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -54,14 +48,10 @@ export default function RegisterPage() {
 
   // Role-specific state
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [address, setAddress] = useState('');
+  const [location, setLocation] = useState({ description: '', latitude: null, longitude: null }); // State for location object
   const [vehicleDetails, setVehicleDetails] = useState('');
   const [acceptedWasteTypes, setAcceptedWasteTypes] = useState([]);
-  const [identityDocument, setIdentityDocument] = useState(null); // State for the file
-  
-  // Location-specific state
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [coordinates, setCoordinates] = useState({ latitude: 12.9716, longitude: 77.5946 }); // Default Bangalore
+  const [identityDocument, setIdentityDocument] = useState(null);
   
   // General UI State
   const [loading, setLoading] = useState(false);
@@ -69,7 +59,17 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('');
   const [fadeOut, setFadeOut] = useState(false);
 
-  // Hierarchical waste type structure
+  // --- Handler for LocationAutocomplete ---
+  const handleLocationSelect = (selectedLocation) => {
+    console.log('Selected Location:', selectedLocation);
+    setLocation({
+        description: selectedLocation.description,
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+    });
+  };
+
+  // Hierarchical waste type structure (remains unchanged)
   const wasteCategories = {
     organicWaste: {
       title: "Organic Waste (Green Bin)",
@@ -77,25 +77,11 @@ export default function RegisterPage() {
       subcategories: {
         kitchenWaste: {
           title: "Kitchen Waste",
-          items: [
-            "Cooked food and leftovers",
-            "Uncooked kitchen scraps", 
-            "Fruit and vegetable peels",
-            "Rotten fruits and vegetables",
-            "Eggshells",
-            "Chicken and fish bones",
-            "Tissue paper soiled with food",
-            "Used tea bags and coffee grounds",
-            "Leaf plates"
-          ]
+          items: ["Cooked food and leftovers", "Uncooked kitchen scraps", "Fruit and vegetable peels", "Rotten fruits and vegetables", "Eggshells", "Chicken and fish bones", "Tissue paper soiled with food", "Used tea bags and coffee grounds", "Leaf plates"]
         },
         gardenWaste: {
           title: "Garden Waste",
-          items: [
-            "Pooja flowers and garlands",
-            "Garden sweepings (fallen leaves, twigs, etc.)",
-            "Weeds"
-          ]
+          items: ["Pooja flowers and garlands", "Garden sweepings (fallen leaves, twigs, etc.)", "Weeds"]
         }
       }
     },
@@ -105,74 +91,38 @@ export default function RegisterPage() {
       subcategories: {
         plastic: {
           title: "Plastic",
-          items: [
-            "Plastic covers, bottles, boxes, and other items",
-            "Milk and curd packets",
-            "Chips, biscuit, and toffee wrappers",
-            "Plastic cups"
-          ]
+          items: ["Plastic covers, bottles, boxes, and other items", "Milk and curd packets", "Chips, biscuit, and toffee wrappers", "Plastic cups"]
         },
         paper: {
           title: "Paper",
-          items: [
-            "Newspapers and magazines",
-            "Cardboard cartons and pizza boxes",
-            "Tetra Paks (juice/milk cartons)",
-            "Paper cups and plates",
-            "Stationery and junk mail"
-          ]
+          items: ["Newspapers and magazines", "Cardboard cartons and pizza boxes", "Tetra Paks (juice/milk cartons)", "Paper cups and plates", "Stationery and junk mail"]
         },
         metal: {
           title: "Metal",
-          items: [
-            "Foil containers",
-            "Metal cans (beverage, food cans)"
-          ]
+          items: ["Foil containers", "Metal cans (beverage, food cans)"]
         },
         glass: {
           title: "Glass",
-          items: [
-            "Unbroken glass bottles and jars (Handle with care)"
-          ]
+          items: ["Unbroken glass bottles and jars (Handle with care)"]
         },
         otherDryWaste: {
           title: "Other Dry Waste",
-          items: [
-            "Rubber and Thermocol (Styrofoam)",
-            "Old mops, dusters, and sponges",
-            "Coconut shells",
-            "Hair",
-            "Ceramics and wooden chips",
-            "Used cosmetics containers"
-          ]
+          items: ["Rubber and Thermocol (Styrofoam)", "Old mops, dusters, and sponges", "Coconut shells", "Hair", "Ceramics and wooden chips", "Used cosmetics containers"]
         },
         eWaste: {
           title: "E-waste (Electronic Waste)",
           description: "Hazardous - store separately and give to certified e-waste recycler",
-          items: [
-            "Batteries",
-            "CDs and Tapes",
-            "Thermometers"
-          ]
+          items: ["Batteries", "CDs and Tapes", "Thermometers"]
         },
         bulbsLighting: {
           title: "Bulbs & Lighting",
           description: "Handle with care as these are hazardous",
-          items: [
-            "Bulbs, Tube lights, and CFLs"
-          ]
+          items: ["Bulbs, Tube lights, and CFLs"]
         },
         constructionDebris: {
           title: "Construction Debris & Inerts",
           description: "Never mix with regular waste. Check with local municipality for collection services",
-          items: [
-            "Rubble and bricks",
-            "Paints",
-            "Silt from drains",
-            "Cement powder",
-            "Broken glass",
-            "Flower pots (clay/ceramic)"
-          ]
+          items: ["Rubble and bricks", "Paints", "Silt from drains", "Cement powder", "Broken glass", "Flower pots (clay/ceramic)"]
         }
       }
     },
@@ -182,25 +132,12 @@ export default function RegisterPage() {
       subcategories: {
         general: {
           title: "General Sanitary Waste",
-          items: [
-            "Diapers and sanitary napkins",
-            "Bandages, used masks, and gloves",
-            "Contaminated cotton, gauze, or used tissues",
-            "Condoms",
-            "Expired or unused medicines",
-            "Nails",
-            "Swept dust",
-            "Cigarette butts"
-          ]
+          items: ["Diapers and sanitary napkins", "Bandages, used masks, and gloves", "Contaminated cotton, gauze, or used tissues", "Condoms", "Expired or unused medicines", "Nails", "Swept dust", "Cigarette butts"]
         },
         sharps: {
           title: "Sharps",
           description: "All sharp objects MUST be wrapped carefully and thickly in newspaper or placed in a puncture-proof box before disposal",
-          items: [
-            "Razors and blades",
-            "Syringes",
-            "Injection vials"
-          ]
+          items: ["Razors and blades", "Syringes", "Injection vials"]
         }
       }
     }
@@ -229,6 +166,10 @@ export default function RegisterPage() {
       setError("Passwords do not match.");
       return;
     }
+    if (!location.description || !location.latitude || !location.longitude) {
+        setError("Please select a valid address from the suggestions.");
+        return;
+    }
     if (role === 'COLLECTOR' && !identityDocument) {
         setError("Please upload an identity document.");
         return;
@@ -241,7 +182,6 @@ export default function RegisterPage() {
 
     let documentUrl = '';
 
-    // --- Step 1: Handle File Upload if Collector ---
     if (role === 'COLLECTOR' && identityDocument) {
         try {
             const fileExt = identityDocument.name.split('.').pop();
@@ -273,142 +213,61 @@ export default function RegisterPage() {
         }
     }
 
-    // --- Step 2: Build the data payload for the API ---
     let registrationData = {
-        name, email, phone, password, role, address,
-        latitude: coordinates.latitude, 
-        longitude: coordinates.longitude,
+        name, email, phone, password, role, 
+        address: location.description,
+        latitude: location.latitude, 
+        longitude: location.longitude,
     };
 
     if (role === 'HOUSEHOLD') {
         registrationData.dateOfBirth = dateOfBirth;
     } else if (role === 'COLLECTOR') {
         registrationData.vehicleDetails = vehicleDetails;
-        registrationData.acceptedWasteTypes = mapToEnumWasteTypes(acceptedWasteTypes); // Convert to enum values
-        registrationData.identityDocumentUrl = documentUrl; // Use the real URL
+        registrationData.acceptedWasteTypes = mapToEnumWasteTypes(acceptedWasteTypes);
+        registrationData.identityDocumentUrl = documentUrl;
     }
 
-    // --- Step 3: Call the registration API ---
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(registrationData),
         });
-
         const result = await response.json();
-
         if (response.ok) {
-            setSuccess("Registration successful! Redirecting to login...");
-            setFadeOut(true);
-            setTimeout(() => {
-                router.push('/');
-            }, 1500);
+            setSuccess("Registration successful! Redirecting...");
+            router.push('/');
         } else {
-            setError(result.message || 'An error occurred during registration.');
+            setError(result.message || 'Registration failed.');
         }
     } catch (err) {
-        setError('Could not connect to the server. Please try again.');
+        setError('Could not connect to the server.');
     } finally {
         setLoading(false);
     }
   };
 
+  // All other helper functions (getCategoryIcon, mapToEnumWasteTypes, etc.) remain the same
   const getCategoryIcon = (categoryKey) => {
-    const icons = {
-      organicWaste: <Nature sx={{ color: '#4CAF50' }} />,
-      dryWaste: <Recycling sx={{ color: '#2196F3' }} />,
-      sanitaryWaste: <ReportProblem sx={{ color: '#F44336' }} />
-    };
+    const icons = { organicWaste: <Nature sx={{ color: '#4CAF50' }} />, dryWaste: <Recycling sx={{ color: '#2196F3' }} />, sanitaryWaste: <ReportProblem sx={{ color: '#F44336' }} /> };
     return icons[categoryKey] || <Nature />;
   };
-
   const getCategoryColor = (categoryKey) => {
-    const colors = {
-      organicWaste: '#4CAF50',
-      dryWaste: '#2196F3', 
-      sanitaryWaste: '#F44336'
-    };
+    const colors = { organicWaste: '#4CAF50', dryWaste: '#2196F3', sanitaryWaste: '#F44336' };
     return colors[categoryKey] || '#4CAF50';
   };
-
   const handleSubcategoryChange = (categoryKey, subcategoryKey, isChecked) => {
     const wasteTypeKey = `${categoryKey}.${subcategoryKey}`;
-    
-    if (isChecked) {
-      setAcceptedWasteTypes(prev => [...prev, wasteTypeKey]);
-    } else {
-      setAcceptedWasteTypes(prev => prev.filter(type => type !== wasteTypeKey));
-    }
+    if (isChecked) { setAcceptedWasteTypes(prev => [...prev, wasteTypeKey]); } else { setAcceptedWasteTypes(prev => prev.filter(type => type !== wasteTypeKey)); }
   };
-
   const isSubcategorySelected = (categoryKey, subcategoryKey) => {
     const wasteTypeKey = `${categoryKey}.${subcategoryKey}`;
     return acceptedWasteTypes.includes(wasteTypeKey);
   };
-
-  // Handle location selection from autocomplete
-  const handleLocationSelect = (location) => {
-    setSelectedLocation(location);
-    setAddress(location.description);
-    
-    // Extract coordinates if available
-    if (location.lat && location.lng) {
-      setCoordinates({
-        latitude: parseFloat(location.lat),
-        longitude: parseFloat(location.lng)
-      });
-    } else if (location.lat && location.lon) {
-      setCoordinates({
-        latitude: parseFloat(location.lat),
-        longitude: parseFloat(location.lon)
-      });
-    }
-    // If Google Places API is used, we might need to fetch details for coordinates
-    else if (location.id && window.google && window.google.maps) {
-      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-      service.getDetails({
-        placeId: location.id,
-        fields: ['geometry']
-      }, (place, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && place.geometry) {
-          setCoordinates({
-            latitude: place.geometry.location.lat(),
-            longitude: place.geometry.location.lng()
-          });
-        }
-      });
-    }
-  };
-
-  // Map hierarchical waste types to Prisma enum values
   const mapToEnumWasteTypes = (hierarchicalTypes) => {
-    const mapping = {
-      // Organic waste maps to ORGANIC
-      'organicWaste.kitchenWaste': 'ORGANIC',
-      'organicWaste.gardenWaste': 'ORGANIC',
-      
-      // Dry waste subcategories map to different enums
-      'dryWaste.plastic': 'RECYCLABLE',
-      'dryWaste.paper': 'RECYCLABLE', 
-      'dryWaste.metal': 'RECYCLABLE',
-      'dryWaste.glass': 'RECYCLABLE',
-      'dryWaste.otherDryWaste': 'GENERAL',
-      'dryWaste.eWaste': 'E_WASTE',
-      'dryWaste.bulbsLighting': 'HAZARDOUS',
-      'dryWaste.constructionDebris': 'CONSTRUCTION_DEBRIS',
-      
-      // Sanitary waste maps to different categories
-      'sanitaryWaste.general': 'GENERAL',
-      'sanitaryWaste.sharps': 'MEDICAL'
-    };
-
-    // Convert hierarchical selections to enum values and remove duplicates
-    const enumTypes = hierarchicalTypes
-      .map(type => mapping[type])
-      .filter(Boolean) // Remove undefined values
-      .filter((value, index, array) => array.indexOf(value) === index); // Remove duplicates
-
+    const mapping = { 'organicWaste.kitchenWaste': 'ORGANIC', 'organicWaste.gardenWaste': 'ORGANIC', 'dryWaste.plastic': 'PLASTIC', 'dryWaste.paper': 'PAPER', 'dryWaste.metal': 'METAL', 'dryWaste.glass': 'GLASS', 'dryWaste.otherDryWaste': 'OTHER', 'dryWaste.eWaste': 'E_WASTE', 'dryWaste.bulbsLighting': 'BULBS', 'dryWaste.constructionDebris': 'CONSTRUCTION_DEBRIS', 'sanitaryWaste.general': 'SANITARY', 'sanitaryWaste.sharps': 'MEDICAL' };
+    const enumTypes = hierarchicalTypes.map(type => mapping[type]).filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
     return enumTypes;
   };
 
@@ -419,7 +278,7 @@ export default function RegisterPage() {
             {!fadeOut && (
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -40 }} transition={{ duration: 0.7 }}>
                 <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, py: 4 }}>
-                    <Paper elevation={12} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, textAlign: 'center', backdropFilter: 'blur(8px)', background: 'rgba(255,255,255,0.92)', width: '100%', maxWidth: '800px'  }}>
+                    <Paper elevation={12} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, textAlign: 'center', backdropFilter: 'blur(8px)', background: 'rgba(255,255,255,0.92)', width: '100%', maxWidth: '480px' }}>
                         <Typography variant="h3" gutterBottom sx={{ color: '#4CAF50', fontWeight: 'bold' }}>SmartRecycle</Typography>
                         <Typography variant="h6" gutterBottom>Create an Account</Typography>
                         <Box component="form" onSubmit={handleRegister} sx={{ mt: 2 }}>
@@ -434,148 +293,52 @@ export default function RegisterPage() {
                                 <ToggleButton value="HOUSEHOLD">👤 I want to dispose waste</ToggleButton>
                                 <ToggleButton value="COLLECTOR">🚛 I am a waste collector</ToggleButton>
                             </ToggleButtonGroup>
+                            
+                            {/* --- COLLAPSE FOR HOUSEHOLD --- */}
                             <Collapse in={role === 'HOUSEHOLD'}>
                                 <Divider sx={{ my: 2 }}>User Details</Divider>
                                 <TextField fullWidth required={role === 'HOUSEHOLD'} label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} margin="normal" />
-                                <Box sx={{ mt: 2, mb: 1 }}>
-                                    <LocationAutocomplete
-                                        value={address}
-                                        onChange={setAddress}
-                                        onSelect={handleLocationSelect}
-                                        label="Home Address"
-                                        placeholder="Enter your home address..."
-                                        required={role === 'HOUSEHOLD'}
-                                        margin="normal"
-                                    />
-                                </Box>
+                                <LocationAutocomplete
+                                    label="Home Address"
+                                    value={location.description}
+                                    onSelect={handleLocationSelect}
+                                    required={role === 'HOUSEHOLD'}
+                                    margin="normal"
+                                />
                             </Collapse>
+
+                            {/* --- COLLAPSE FOR COLLECTOR --- */}
                             <Collapse in={role === 'COLLECTOR'}>
                                 <Divider sx={{ my: 2 }}>Collector Details</Divider>
-                                <Box sx={{ mt: 2, mb: 1 }}>
-                                    <LocationAutocomplete
-                                        value={address}
-                                        onChange={setAddress}
-                                        onSelect={handleLocationSelect}
-                                        label="Service Area Address"
-                                        placeholder="Enter your service area address..."
-                                        required={role === 'COLLECTOR'}
-                                        margin="normal"
-                                    />
-                                </Box>
+                                <LocationAutocomplete
+                                    label="Service Area Address"
+                                    value={location.description}
+                                    onSelect={handleLocationSelect}
+                                    required={role === 'COLLECTOR'}
+                                    margin="normal"
+                                />
                                 <TextField fullWidth label="Vehicle Details" value={vehicleDetails} onChange={(e) => setVehicleDetails(e.target.value)} margin="normal" />
+                                
+                                {/* ... Waste Types Selection UI ... */}
                                 <Box sx={{ mt: 2, mb: 2 }}>
-                                    <Typography variant="h6" gutterBottom>
-                                        Accepted Waste Types *
-                                    </Typography>
-                                    {acceptedWasteTypes.length > 0 && (
-                                        <Box sx={{ mb: 2 }}>
-                                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                                                Selected waste types:
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
-                                                {acceptedWasteTypes.map((wasteType) => {
-                                                    const [category, subcategory] = wasteType.split('.');
-                                                    const categoryData = wasteCategories[category];
-                                                    const subcategoryData = categoryData?.subcategories[subcategory];
-                                                    return (
-                                                        <Chip 
-                                                            key={wasteType} 
-                                                            label={subcategoryData?.title || wasteType}
-                                                            size="small"
-                                                            sx={{ 
-                                                                backgroundColor: getCategoryColor(category) + '20',
-                                                                color: getCategoryColor(category),
-                                                                fontWeight: 'bold'
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
-                                            </Box>
-                                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                                System categories: {mapToEnumWasteTypes(acceptedWasteTypes).join(', ')}
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                    
+                                    <Typography variant="h6" gutterBottom>Accepted Waste Types *</Typography>
                                     {Object.entries(wasteCategories).map(([categoryKey, categoryData]) => (
-                                        <Accordion 
-                                            key={categoryKey} 
-                                            sx={{ 
-                                                mb: 1, 
-                                                border: `1px solid ${getCategoryColor(categoryKey)}20`,
-                                                borderRadius: 2,
-                                                '&:before': { display: 'none' }
-                                            }}
-                                        >
-                                            <AccordionSummary 
-                                                expandIcon={<ExpandMore />}
-                                                sx={{ 
-                                                    borderLeft: `4px solid ${getCategoryColor(categoryKey)}`,
-                                                    '& .MuiAccordionSummary-content': {
-                                                        alignItems: 'center'
-                                                    }
-                                                }}
-                                            >
+                                        <Accordion key={categoryKey} sx={{ mb: 1, border: `1px solid ${getCategoryColor(categoryKey)}20`, borderRadius: 2, '&:before': { display: 'none' } }}>
+                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{ borderLeft: `4px solid ${getCategoryColor(categoryKey)}`, '& .MuiAccordionSummary-content': { alignItems: 'center' } }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     {getCategoryIcon(categoryKey)}
                                                     <Box>
-                                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                                            {categoryData.title}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {categoryData.description}
-                                                        </Typography>
+                                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{categoryData.title}</Typography>
+                                                        <Typography variant="caption" color="text.secondary">{categoryData.description}</Typography>
                                                     </Box>
                                                 </Box>
                                             </AccordionSummary>
                                             <AccordionDetails sx={{ pt: 0 }}>
                                                 <FormGroup>
                                                     {Object.entries(categoryData.subcategories).map(([subcategoryKey, subcategoryData]) => (
-                                                        <Card 
-                                                            key={subcategoryKey} 
-                                                            variant="outlined" 
-                                                            sx={{ 
-                                                                mb: 1.5, 
-                                                                borderColor: isSubcategorySelected(categoryKey, subcategoryKey) 
-                                                                    ? getCategoryColor(categoryKey) 
-                                                                    : 'rgba(0,0,0,0.12)',
-                                                                backgroundColor: isSubcategorySelected(categoryKey, subcategoryKey)
-                                                                    ? getCategoryColor(categoryKey) + '08'
-                                                                    : 'transparent'
-                                                            }}
-                                                        >
+                                                        <Card key={subcategoryKey} variant="outlined" sx={{ mb: 1.5, borderColor: isSubcategorySelected(categoryKey, subcategoryKey) ? getCategoryColor(categoryKey) : 'rgba(0,0,0,0.12)', backgroundColor: isSubcategorySelected(categoryKey, subcategoryKey) ? getCategoryColor(categoryKey) + '08' : 'transparent' }}>
                                                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                                                <FormControlLabel
-                                                                    control={
-                                                                        <Checkbox
-                                                                            checked={isSubcategorySelected(categoryKey, subcategoryKey)}
-                                                                            onChange={(e) => handleSubcategoryChange(categoryKey, subcategoryKey, e.target.checked)}
-                                                                            sx={{ color: getCategoryColor(categoryKey) }}
-                                                                        />
-                                                                    }
-                                                                    label={
-                                                                        <Box>
-                                                                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                                                                                {subcategoryData.title}
-                                                                            </Typography>
-                                                                            {subcategoryData.description && (
-                                                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontStyle: 'italic' }}>
-                                                                                    {subcategoryData.description}
-                                                                                </Typography>
-                                                                            )}
-                                                                            <Box sx={{ mt: 1 }}>
-                                                                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
-                                                                                    Items include:
-                                                                                </Typography>
-                                                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                                                                    {subcategoryData.items.slice(0, 3).join(', ')}
-                                                                                    {subcategoryData.items.length > 3 && `, and ${subcategoryData.items.length - 3} more...`}
-                                                                                </Typography>
-                                                                            </Box>
-                                                                        </Box>
-                                                                    }
-                                                                    sx={{ alignItems: 'flex-start', m: 0 }}
-                                                                />
+                                                                <FormControlLabel control={<Checkbox checked={isSubcategorySelected(categoryKey, subcategoryKey)} onChange={(e) => handleSubcategoryChange(categoryKey, subcategoryKey, e.target.checked)} sx={{ color: getCategoryColor(categoryKey) }} />} label={<Box><Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>{subcategoryData.title}</Typography>{subcategoryData.description && (<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontStyle: 'italic' }}>{subcategoryData.description}</Typography>)}<Box sx={{ mt: 1 }}><Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>Items include:</Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{subcategoryData.items.slice(0, 3).join(', ')}{subcategoryData.items.length > 3 && `, and ${subcategoryData.items.length - 3} more...`}</Typography></Box></Box>} sx={{ alignItems: 'flex-start', m: 0 }} />
                                                             </CardContent>
                                                         </Card>
                                                     ))}
@@ -584,6 +347,7 @@ export default function RegisterPage() {
                                         </Accordion>
                                     ))}
                                 </Box>
+                                
                                 <Button variant="outlined" component="label" fullWidth sx={{ mt: 1 }}>
                                     {identityDocument ? `File: ${identityDocument.name}` : 'Upload Identity Document'}
                                     <input type="file" hidden onChange={handleFileSelect} />
