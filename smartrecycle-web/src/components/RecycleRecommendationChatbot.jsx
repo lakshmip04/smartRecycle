@@ -541,7 +541,7 @@ Follow the exact format: Start with a friendly intro, then give star ratings (тн
                             }
                           }}
                         >
-                          Post Alert for this
+                          {t('chatbot.postAlertForThis')}
                         </Button>
                       )}
                     </Box>

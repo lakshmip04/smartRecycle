@@ -624,7 +624,7 @@ Only return the JSON.
                 />
               </Paper>
 
-              {/* Location Selection Section */}
+              {/* Location Selection Section
               <Box sx={{ mt: 3, textAlign: 'left', maxWidth: '500px', mx: 'auto' }}>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>
                   <LocationOn sx={{ mr: 1 }} />
@@ -640,13 +640,13 @@ Only return the JSON.
                   placeholder={t('wasteClassifier.pickupAddressPlaceholder')}
                   required={true}
                 />
-              </Box>
+              </Box> */}
 
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
                   onClick={classifyWaste}
-                  disabled={loading || !locationData.address}
+                  disabled={loading }
                   startIcon={loading ? <CircularProgress size={20} /> : <Recycling />}
                   sx={{ mr: 1 }}
                 >

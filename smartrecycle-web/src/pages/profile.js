@@ -315,22 +315,22 @@ export default function ProfilePage() {
                     <Box display="flex" alignItems="center" mb={2}>
                         <HelpIcon sx={{ color: '#4CAF50', mr: 1 }} />
                         <Typography variant="h6" fontWeight="bold" sx={{ color: '#2E7D32' }}>
-                            Customer Care
+                            {t('customerCare.title')}
                         </Typography>
                     </Box>
                     <Divider sx={{ mb: 2 }} />
                     <List dense>
                         <ListItem>
                             <ListItemIcon><BusinessIcon /></ListItemIcon>
-                            <ListItemText primary="EcoDrop Headquarters" secondary="Hitech City, Hyderabad, Telangana, 500081" />
+                            <ListItemText primary={t('customerCare.headquarters')} secondary={t('customerCare.headquartersAddress')} />
                         </ListItem>
                         <ListItem>
                             <ListItemIcon><PhoneIcon /></ListItemIcon>
-                            <ListItemText primary="Support Hotline" secondary="+91 40 1234 5678" />
+                            <ListItemText primary={t('customerCare.supportHotline')} secondary={t('customerCare.supportPhone')} />
                         </ListItem>
                         <ListItem>
                             <ListItemIcon><EmailIcon /></ListItemIcon>
-                            <ListItemText primary="Support Email" secondary="support@ecodrop.com" />
+                            <ListItemText primary={t('customerCare.supportEmail')} secondary={t('customerCare.supportEmailAddress')} />
                         </ListItem>
                     </List>
                 </StyledPaper>
