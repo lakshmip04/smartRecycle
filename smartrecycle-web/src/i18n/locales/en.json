@@ -151,6 +151,9 @@
     "language": "Language"
   },
   "wasteGuide": {
+    "pageTitle": "Waste Management Guide",
+    "pageSubtitle": "Learn how to properly sort and manage different types of waste for a sustainable future",
+    "principlesTitle": "Sustainable Waste Management Principles",
     "organicWaste": {
       "title": "Organic Waste (Green Bin)",
       "description": "Biodegradable waste from kitchen and garden",
@@ -297,6 +300,12 @@
     "digitalization": {
       "title": "Digitalization",
       "description": "Embrace digital documents and online bills to drastically reduce paper consumption."
+    },
+    "searchPlaceholder": "Search for waste items...",
+    "notFound": {
+      "title": "No results found for \"{{searchTerm}}\"",
+      "description": "Try searching with different keywords or ask our AI chatbot for help with your specific waste item.",
+      "button": "Ask AI Chatbot"
     }
   }
 }

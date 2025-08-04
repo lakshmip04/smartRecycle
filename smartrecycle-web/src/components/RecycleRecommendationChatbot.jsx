@@ -38,7 +38,7 @@ import {
   AddAlert as AddAlertIcon,
 } from '@mui/icons-material';
 
-const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
+const RecycleRecommendationChatbot = ({ onPostAlertFromChat, initialMessage = '' }) => {
   const { t, i18n } = useTranslation();
   
   const [messages, setMessages] = useState([
@@ -49,7 +49,7 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
       timestamp: new Date(),
     }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState(initialMessage);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
@@ -72,6 +72,13 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
       }
     };
   }, []);
+
+  // Update input message when initialMessage prop changes
+  useEffect(() => {
+    if (initialMessage) {
+      setInputMessage(initialMessage);
+    }
+  }, [initialMessage]);
 
   const handleVoiceInput = async () => {
     if (isRecording) {
@@ -188,6 +195,18 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
     }
   };
 
+  const getSpeechLang = (langCode) => {
+    const map = {
+      en: 'en-US',
+      hi: 'hi-IN',
+      kn: 'kn-IN',
+      te: 'te-IN',
+      ta: 'ta-IN',
+      ml: 'ml-IN'
+    };
+    return map[langCode] || 'en-US';
+  };
+
   const handlePlay = (text, messageId) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -214,8 +233,10 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
         .trim();
       const utterance = new SpeechSynthesisUtterance(cleanedText);
 
-      utterance.lang = 'en-US';
-      utterance.rate = playbackRate;
+      
+
+      utterance.lang = getSpeechLang(i18n.language);
+       utterance.rate = playbackRate;
 
       utterance.onstart = () => {
         setSpeakingMessageId(messageId);

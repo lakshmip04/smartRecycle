@@ -157,6 +157,20 @@ export default function UserDashboard() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // State for chatbot initial message
+  const [chatbotInitialMessage, setChatbotInitialMessage] = useState('');
+
+  // Handle tab and message query parameters
+  useEffect(() => {
+    const { tab, message } = router.query;
+    if (tab && !isNaN(parseInt(tab))) {
+      setActiveTab(parseInt(tab));
+    }
+    if (message) {
+      setChatbotInitialMessage(decodeURIComponent(message));
+    }
+  }, [router.query]);
+
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files[0]) {
       setImageFile(event.target.files[0]);
@@ -375,7 +389,7 @@ export default function UserDashboard() {
             </TabPanel>
             <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
             <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
-            <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot onPostAlertFromChat={handlePostAlertFromChat} /></TabPanel>
+            <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot onPostAlertFromChat={handlePostAlertFromChat} initialMessage={chatbotInitialMessage} /></TabPanel>
             <TabPanel value={activeTab} index={4}>
               <WasteGuide />
             </TabPanel>
