@@ -188,6 +188,19 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
     }
   };
 
+  const getSpeechLang = (langCode) => {
+  const map = {
+    en: 'en-US',
+    hi: 'hi-IN',
+    kn: 'kn-IN',
+    te: 'te-IN',
+    ta: 'ta-IN',
+    ml: 'ml-IN'
+  };
+  return map[langCode] || 'en-US';
+};
+
+
   const handlePlay = (text, messageId) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -212,9 +225,9 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
         .replace(/\bRECYCLE\b/g, 'For recycling,')
         // Clean up any remaining formatting
         .trim();
-      const utterance = new SpeechSynthesisUtterance(cleanedText);
+      const utterance = new SpeechSynthesisUtterance(cleanedText)
 
-      utterance.lang = 'en-US';
+     utterance.lang = getSpeechLang(i18n.language);
       utterance.rate = playbackRate;
 
       utterance.onstart = () => {
