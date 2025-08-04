@@ -36,11 +36,6 @@ import {
   Person as PersonIcon,
   Upload as UploadIcon,
   Book as GuideIcon,
-  RemoveCircleOutline, // Added missing import
-  Block,               // Added missing import
-  ShoppingCart,        // Added missing import
-  Recycling,           // Added missing import
-  Devices,             // Added missing import
 } from '@mui/icons-material';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
@@ -52,6 +47,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import AlertCard from '../components/AlertCard';
 import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
+import WasteGuide from '../components/WasteGuide';
 import { supabase } from '../lib/supabaseClient';
 
 // Guide data will be defined inside the component to access translations
@@ -94,14 +90,7 @@ export default function UserDashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // --- Guide data with translations ---
-  const guideSteps = [
-    { icon: <RemoveCircleOutline />, title: t('wasteGuide.reduce.title'), description: t('wasteGuide.reduce.description') },
-    { icon: <Block />, title: t('wasteGuide.refuse.title'), description: t('wasteGuide.refuse.description') },
-    { icon: <ShoppingCart />, title: t('wasteGuide.buyInBulk.title'), description: t('wasteGuide.buyInBulk.description') },
-    { icon: <Recycling />, title: t('wasteGuide.recycling.title'), description: t('wasteGuide.recycling.description') },
-    { icon: <Devices />, title: t('wasteGuide.digitalization.title'), description: t('wasteGuide.digitalization.description') },
-  ];
+
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -388,27 +377,7 @@ export default function UserDashboard() {
             <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
             <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot onPostAlertFromChat={handlePostAlertFromChat} /></TabPanel>
             <TabPanel value={activeTab} index={4}>
-              <Grid container spacing={3} className="animate-fade-in">
-                {guideSteps.map((step, index) => (
-                  <Grid item xs={12} md={6} key={index}>
-                    <StyledPaper className="hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ color: '#4CAF50' }} className="group-hover:scale-110 transition-transform duration-300">
-                          {React.cloneElement(step.icon, { style: { fontSize: '2.5rem' } })}
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold' }} className="group-hover:text-primary-600 transition-colors duration-300">
-                            {step.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {step.description}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </StyledPaper>
-                  </Grid>
-                ))}
-              </Grid>
+              <WasteGuide />
             </TabPanel>
           </StyledPaper>
 
