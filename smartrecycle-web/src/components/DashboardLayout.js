@@ -38,7 +38,7 @@ export default function DashboardLayout({ children, navItems = [], pageTitle = "
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true); // This is crucial to prevent hydration errors
+    setIsMounted(true);
     const storedUserData = localStorage.getItem('user_data');
     if (storedUserData) {
       setUser(JSON.parse(storedUserData));
@@ -207,7 +207,8 @@ export default function DashboardLayout({ children, navItems = [], pageTitle = "
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          // MODIFIED: Added responsive padding
+          p: { xs: 2, sm: 3 }, 
           width: { md: `calc(100% - ${drawerWidth}px)` },
           bgcolor: 'background.default',
         }}
