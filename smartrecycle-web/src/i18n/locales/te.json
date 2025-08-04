@@ -42,7 +42,8 @@
     "processingVoice": "వాయిస్ ఇన్‌పుట్ ప్రాసెస్ అవుతోంది...",
     "ttsNotSupported": "ఈ బ్రౌజర్‌లో టెక్స్ట్-టు-స్పీచ్‌కు మద్దతు లేదు.",
     "microphoneError": "మైక్రోఫోన్ యాక్సెస్ నిరాకరించబడింది లేదా అందుబాటులో లేదు.",
-    "voiceInputFailed": "వాయిస్ ఇన్‌పుట్ విఫలమైంది. దయచేసి టైప్ చేయడానికి ప్రయత్నించండి."
+    "voiceInputFailed": "వాయిస్ ఇన్‌పుట్ విఫలమైంది. దయచేసి టైప్ చేయడానికి ప్రయత్నించండి.",
+    "postAlertForThis": "దీనికి అలర్ట్ పోస్ట్ చేయండి"
   },
   "wasteClassifier": {
     "title": "AI వ్యర్థాల వర్గీకరణి",
@@ -132,6 +133,15 @@
     "logoutConfirm": "మీరు నిజంగా లాగౌట్ అవ్వాలనుకుంటున్నారా?",
     "profileUpdateSuccess": "ప్రొఫైల్ విజయవంతంగా అప్‌డేట్ చేయబడింది!",
     "profileUpdateError": "ప్రొఫైల్ అప్‌డేట్ చేయడంలో విఫలమైంది. దయచేసి మళ్ళీ ప్రయత్నించండి."
+  },
+  "customerCare": {
+    "title": "కస్టమర్ కేర్",
+    "headquarters": "ఇకోడ్రాప్ ప్రధాన కార్యాలయం",
+    "headquartersAddress": "హైటెక్ సిటీ, హైదరాబాద్, తెలంగాణ, 500081",
+    "supportHotline": "సపోర్ట్ హాట్‌లైన్",
+    "supportPhone": "+91 40 1234 5678",
+    "supportEmail": "సపోర్ట్ ఇమెయిల్",
+    "supportEmailAddress": "support@ecodrop.com"
   },
   "userDashboard": {
     "tabs": {

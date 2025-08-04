@@ -42,7 +42,8 @@
     "processingVoice": "വോയിസ് ഇൻപുട്ട് പ്രോസസ്സ് ചെയ്യുന്നു...",
     "ttsNotSupported": "ഈ ബ്രൗസറിൽ ടെക്സ്റ്റ്-ടു-സ്പീച്ച് ലഭ്യമല്ല.",
     "microphoneError": "മൈക്രോഫോൺ ലഭ്യമല്ല അല്ലെങ്കിൽ അനുമതി നിഷേധിച്ചു.",
-    "voiceInputFailed": "വോയ്‌സ് ഇൻപുട്ട് പരാജയപ്പെട്ടു. ദയവായി ടൈപ്പ് ചെയ്യാൻ ശ്രമിക്കുക."
+    "voiceInputFailed": "വോയ്‌സ് ഇൻപുട്ട് പരാജയപ്പെട്ടു. ദയവായി ടൈപ്പ് ചെയ്യാൻ ശ്രമിക്കുക.",
+    "postAlertForThis": "ഇതിനായി അലേർട്ട് പോസ്റ്റ് ചെയ്യുക"
   },
   "wasteClassifier": {
     "title": "AI മാലിന്യ വർഗ്ഗീകരണി",
@@ -132,6 +133,15 @@
     "logoutConfirm": "നിങ്ങൾക്ക് ലോഗൗട്ട് ചെയ്യണമെന്ന് ഉറപ്പാണോ?",
     "profileUpdateSuccess": "പ്രൊഫൈൽ വിജയകരമായി അപ്ഡേറ്റ് ചെയ്തു!",
     "profileUpdateError": "പ്രൊഫൈൽ അപ്ഡേറ്റ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു. ദയവായി വീണ്ടും ശ്രമിക്കുക."
+  },
+  "customerCare": {
+    "title": "ഗ്രാഹക സേവനം",
+    "headquarters": "ഇക്കോഡ്രോപ്പ് ഹെഡ്‌ഓഫീസ്",
+    "headquartersAddress": "ഹൈടെക് സിറ്റി, ഹൈദരാബാദ്, തെലങ്കാണ, 500081",
+    "supportHotline": "സപ്പോർട്ട് ഹോട്ട്‌ലൈൻ",
+    "supportPhone": "+91 40 1234 5678",
+    "supportEmail": "സപ്പോർട്ട് ഇമെയിൽ",
+    "supportEmailAddress": "support@ecodrop.com"
   },
   "userDashboard": {
     "tabs": {

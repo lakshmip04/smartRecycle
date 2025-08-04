@@ -42,7 +42,8 @@
     "processingVoice": "ಧ್ವನಿ ಇನ್‌ಪುಟ್ ಅನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತಿದೆ...",
     "ttsNotSupported": "ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಪಠ್ಯದಿಂದ-ಧ್ವನಿಗೆ ಪರಿವರ್ತನೆ ಬೆಂಬಲಿತವಾಗಿಲ್ಲ.",
     "microphoneError": "ಮೈಕ್ರೊಫೋನ್ ಬಳಕೆಗೆ ಅನುಮತಿ ಇಲ್ಲ ಅಥವಾ ಅದು ಲಭ್ಯವಿಲ್ಲ.",
-    "voiceInputFailed": "ಧ್ವನಿ ಇನ್‌ಪುಟ್ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಟೈಪ್ ಮಾಡಲು ಪ್ರಯತ್ನಿಸಿ."
+    "voiceInputFailed": "ಧ್ವನಿ ಇನ್‌ಪುಟ್ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಟೈಪ್ ಮಾಡಲು ಪ್ರಯತ್ನಿಸಿ.",
+    "postAlertForThis": "ಇದಕ್ಕಾಗಿ ಅಲರ್ಟ್ ಪೋಸ್ಟ್ ಮಾಡಿ"
   },
   "wasteClassifier": {
     "title": "AI ತ್ಯಾಜ್ಯ ವರ್ಗೀಕರಣ",
@@ -141,6 +142,15 @@
     "logoutConfirm": "ನೀವು ಖಚಿತವಾಗಿ ಲಾಗ್‌ಔಟ್ ಮಾಡಲು ಬಯಸುವಿರಾ?",
     "profileUpdateSuccess": "ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ!",
     "profileUpdateError": "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+  },
+  "customerCare": {
+    "title": "ಗ್ರಾಹಕ ಸೇವೆ",
+    "headquarters": "ಇಕೋಡ್ರಾಪ್ ಪ್ರಧಾನ ಕಚೇರಿ",
+    "headquartersAddress": "ಹೈಟೆಕ್ ಸಿಟಿ, ಹೈದರಾಬಾದ್, ತೆಲಂಗಾಣ, 500081",
+    "supportHotline": "ಸಹಾಯ ಹಾಟ್‌ಲೈನ್",
+    "supportPhone": "+91 40 1234 5678",
+    "supportEmail": "ಸಹಾಯ ಇಮೇಲ್",
+    "supportEmailAddress": "support@ecodrop.com"
   },
   "userDashboard": {
     "tabs": {

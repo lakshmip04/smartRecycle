@@ -42,7 +42,8 @@
     "processingVoice": "वॉइस इनपुट प्रोसेस हो रहा है...",
     "ttsNotSupported": "यह ब्राउज़र टेक्स्ट-टू-स्पीच का समर्थन नहीं करता है।",
     "microphoneError": "माइक्रोफ़ोन की अनुमति नहीं है या वह उपलब्ध नहीं है।",
-    "voiceInputFailed": "वॉइस इनपुट विफल रहा। कृपया टाइप करने का प्रयास करें।"
+    "voiceInputFailed": "वॉइस इनपुट विफल रहा। कृपया टाइप करने का प्रयास करें।",
+    "postAlertForThis": "इसके लिए अलर्ट पोस्ट करें"
   },
   "wasteClassifier": {
     "title": "AI अपशिष्ट वर्गीकरण",
@@ -141,6 +142,15 @@
     "logoutConfirm": "क्या आप वाकई लॉगआउट करना चाहते हैं?",
     "profileUpdateSuccess": "प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई!",
     "profileUpdateError": "प्रोफ़ाइल अपडेट करने में विफल। कृपया दोबारा प्रयास करें।"
+  },
+  "customerCare": {
+    "title": "ग्राहक सेवा",
+    "headquarters": "इकोड्रॉप मुख्यालय",
+    "headquartersAddress": "हाईटेक सिटी, हैदराबाद, तेलंगाना, 500081",
+    "supportHotline": "सहायता हॉटलाइन",
+    "supportPhone": "+91 40 1234 5678",
+    "supportEmail": "सहायता ईमेल",
+    "supportEmailAddress": "support@ecodrop.com"
   },
   "userDashboard": {
     "tabs": {

@@ -48,6 +48,7 @@ import AlertCard from '../components/AlertCard';
 import WasteClassifier from '../components/WasteClassifier';
 import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
 import WasteGuide from '../components/WasteGuide';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { supabase } from '../lib/supabaseClient';
 
 // Guide data will be defined inside the component to access translations
@@ -194,6 +195,15 @@ export default function UserDashboard() {
     }
   };
 
+  const handleLocationSelect = (locationData) => {
+    setNewAlertData(prev => ({
+      ...prev,
+      pickupAddress: locationData.description,
+      pickupLatitude: locationData.latitude,
+      pickupLongitude: locationData.longitude,
+    }));
+  };
+
   const handleCreateAlert = async () => {
     if (!newAlertData.wasteType || !newAlertData.weightEstimate || !newAlertData.pickupAddress || !newAlertData.pickupTimeSlot) {
       setError('Please fill all required fields in the form.');
@@ -297,8 +307,34 @@ export default function UserDashboard() {
       setImageFile(classificationData.image);
     }
     
+    // Map AI classification to Prisma enum values
+    const mapWasteType = (aiWasteType) => {
+      const mapping = {
+        'plastic': 'PLASTIC',
+        'paper': 'PAPER',
+        'metal': 'METAL',
+        'glass': 'GLASS',
+        'e-waste': 'E_WASTE',
+        'electronic': 'E_WASTE',
+        'organic': 'ORGANIC',
+        'biodegradable': 'ORGANIC',
+        'medical': 'MEDICAL',
+        'hazardous': 'HAZARDOUS',
+        'construction': 'CONSTRUCTION_DEBRIS',
+        'bulbs': 'BULBS_LIGHTING',
+        'lighting': 'BULBS_LIGHTING',
+        'sanitary': 'SANITARY_WASTE',
+        'textile': 'GENERAL', // Map textile to GENERAL as it's not in the enum
+        'other': 'GENERAL'
+      };
+      
+      const lowerType = aiWasteType.toLowerCase();
+      return mapping[lowerType] || 'GENERAL';
+    };
+    
     // Use the mapped system waste type if available, otherwise fallback to biodegradability logic
-    const mappedWasteType = classificationData.classification.system_waste_type || 
+    const mappedWasteType = classificationData.classification.system_waste_type ? 
+      mapWasteType(classificationData.classification.system_waste_type) :
       (classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE');
     
     console.log("🎯 Using mapped waste type:", mappedWasteType);
@@ -327,7 +363,7 @@ export default function UserDashboard() {
     // 1. Pre-fill the alert form with info from the chat
     setNewAlertData(prev => ({
       ...prev,
-      wasteType: 'PLASTIC', // Set a default, user can refine
+      wasteType: 'GENERAL', // Set a default, user can refine
       description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
       // Reset other fields
       weightEstimate: '',
@@ -456,9 +492,17 @@ export default function UserDashboard() {
             <DialogTitle sx={{ color: '#2E7D32' }}>{t('userDashboard.postAlert.title')}</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="TEXTILE">{t('userDashboard.postAlert.wasteTypes.textile')}</MenuItem><MenuItem value="BULBS">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="OTHER">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="BULBS_LIGHTING">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY_WASTE">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="GENERAL">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12} sm={6}><TextField fullWidth label={t('userDashboard.postAlert.estimatedWeight')} type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
-                <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.pickupAddress')} value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
+                <Grid item xs={12}>
+                  <LocationAutocomplete
+                    label={t('userDashboard.postAlert.pickupAddress')}
+                    placeholder={t('userDashboard.postAlert.pickupAddress')}
+                    value={newAlertData.pickupAddress}
+                    onSelect={handleLocationSelect}
+                    required
+                  />
+                </Grid>
                 <Grid item xs={12}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.preferredPickupTime')}</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label={t('userDashboard.postAlert.preferredPickupTime')}><MenuItem value="9am-12pm">{t('userDashboard.postAlert.timeSlots.morning')}</MenuItem><MenuItem value="12pm-3pm">{t('userDashboard.postAlert.timeSlots.afternoon')}</MenuItem><MenuItem value="3pm-6pm">{t('userDashboard.postAlert.timeSlots.evening')}</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.description')} multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
                 <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? t('userDashboard.postAlert.selectedImage', { filename: imageFile.name }) : t('userDashboard.postAlert.uploadImage')}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>

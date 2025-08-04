@@ -42,7 +42,8 @@
     "processingVoice": "Processing voice input...",
     "ttsNotSupported": "Text-to-speech not supported in this browser.",
     "microphoneError": "Microphone access denied or not available.",
-    "voiceInputFailed": "Voice input failed. Please try typing instead."
+    "voiceInputFailed": "Voice input failed. Please try typing instead.",
+    "postAlertForThis": "Post Alert for this"
   },
   "wasteClassifier": {
     "title": "AI Waste Classifier",
@@ -141,6 +142,15 @@
     "logoutConfirm": "Are you sure you want to logout?",
     "profileUpdateSuccess": "Profile updated successfully!",
     "profileUpdateError": "Failed to update profile. Please try again."
+  },
+  "customerCare": {
+    "title": "Customer Care",
+    "headquarters": "EcoDrop Headquarters",
+    "headquartersAddress": "Hitech City, Hyderabad, Telangana, 500081",
+    "supportHotline": "Support Hotline",
+    "supportPhone": "+91 40 1234 5678",
+    "supportEmail": "Support Email",
+    "supportEmailAddress": "support@ecodrop.com"
   },
   "userDashboard": {
     "tabs": {

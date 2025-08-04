@@ -42,6 +42,7 @@
     "micTooltip": "உங்கள் கேள்வியைப் பேசவும்",
     "sendTooltip": "செய்தியை அனுப்பவும்",
     "clearTooltip": "உரையாடலை அழிக்கவும்",
+    "postAlertForThis": "இதற்கான அறிவிப்பை பதிவிடு",
     "languages": {
       "en": "English",
       "hi": "हिंदी",
@@ -93,6 +94,15 @@
     "logoutConfirm": "நீங்கள் வெளியேற விரும்புகிறீர்கள் என்பது உறுதியா?",
     "profileUpdateSuccess": "சுயவிவரம் வெற்றிகரமாகப் புதுப்பிக்கப்பட்டது!",
     "profileUpdateError": "சுயவிவரத்தைப் புதுப்பிக்க முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்."
+  },
+  "customerCare": {
+    "title": "வாடிக்கையாளர் பராமரிப்பு",
+    "headquarters": "இகோடிராப் தலைமையகம்",
+    "headquartersAddress": "ஹைடெக் சிட்டி, ஹைதராபாத், தெலங்காணா, 500081",
+    "supportHotline": "ஆதரவு ஹாட்லைன்",
+    "supportPhone": "+91 40 1234 5678",
+    "supportEmail": "ஆதரவு மின்னஞ்சல்",
+    "supportEmailAddress": "support@ecodrop.com"
   },
   "userDashboard": {
     "tabs": {

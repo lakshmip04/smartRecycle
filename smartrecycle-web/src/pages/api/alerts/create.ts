@@ -70,7 +70,7 @@ export default async function handler(
       // Create the main alert record
       const alert = await tx.wasteAlert.create({
         data: {
-          wasteType: wasteType as WasteType,
+          wasteType: normalizedWasteType as WasteType,
           description,
           imageUrl,
           weightEstimate,
