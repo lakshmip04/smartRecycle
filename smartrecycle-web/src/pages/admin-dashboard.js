@@ -1,36 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
+import dynamic from 'next/dynamic';
 import {
   Box,
   Typography,
   Grid,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
+  Button,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Fab,
+  Tabs,
+  Tab,
+  Stack,
   CircularProgress,
   Alert,
-  Snackbar,
+  Paper,
+  useTheme,
+  useMediaQuery,
+  Avatar,
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  LocalShipping as TruckIcon,
-  BarChart as ChartIcon,
-  Delete as DeleteIcon,
-  Check as CheckIcon,
+  Add as AddIcon,
+  Analytics as AnalyticsIcon,
+  Map as MapIcon,
+  SmartToy as ChatbotIcon,
+  Nature as EcoIcon,
+  Person as PersonIcon,
+  Upload as UploadIcon,
+  Book as GuideIcon,
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
+import Confetti from 'react-confetti';
+import toast, { Toaster } from 'react-hot-toast';
 
+// --- Import your actual components ---
 import DashboardLayout from '../components/DashboardLayout';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import AlertCard from '../components/AlertCard';
+import WasteClassifier from '../components/WasteClassifier';
+import RecycleRecommendationChatbot from '../components/RecycleRecommendationChatbot';
+import WasteGuide from '../components/WasteGuide';
+import { supabase } from '../lib/supabaseClient';
+
+// Guide data will be defined inside the component to access translations
+
+const WasteCollectorMapWithNoSSR = dynamic(
+  () => import('../components/WasteCollectorMap'),
+  {
+    ssr: false,
+    loading: () => <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress color="primary" /></Box>
+  }
+);
+
+const TabPanel = ({ children, value, index }) => (
+  <div role="tabpanel" hidden={value !== index}>
+    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+  </div>
+);
 
 const StyledPaper = (props) => (
   <Paper
@@ -40,6 +74,7 @@ const StyledPaper = (props) => (
       borderRadius: 4,
       backdropFilter: 'blur(8px)',
       background: 'rgba(255,255,255,0.92)',
+      height: '100%',
       ...props.sx,
     }}
     {...props}
@@ -48,23 +83,37 @@ const StyledPaper = (props) => (
   </Paper>
 );
 
-export default function AdminDashboard() {
+
+export default function UserDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('xs'));
+
+
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [activeTab, setActiveTab] = useState(0);
+  const [user, setUser] = useState(null);
+  const [wasteAlerts, setWasteAlerts] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [newAlertData, setNewAlertData] = useState({
+    wasteType: 'PLASTIC',
+    description: '',
+    weightEstimate: '',
+    pickupAddress: '',
+    pickupTimeSlot: '',
+    pickupLatitude: null,
+    pickupLongitude: null,
+  });
+  const [imageFile, setImageFile] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
 
-  const [systemStats, setSystemStats] = useState({});
-  const [users, setUsers] = useState([]);
-  const [collectors, setCollectors] = useState([]);
-  const [analyticsData, setAnalyticsData] = useState(null);
-
-  const adminNavItems = [
-    { name: 'Overview', key: 'overview', icon: <DashboardIcon /> },
-    { name: 'User Management', key: 'users', icon: <PeopleIcon /> },
-    { name: 'Collector Management', key: 'collectors', icon: <TruckIcon /> },
-    { name: 'Analytics', key: 'analytics', icon: <ChartIcon /> },
+  const userNavItems = [
+    { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
+    { name: 'My Profile', path: '/profile', icon: <PersonIcon /> },
   ];
 
   const particlesInit = async (main) => {
@@ -73,117 +122,354 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const storedUserData = localStorage.getItem('user_data');
-    if (!storedUserData || JSON.parse(storedUserData).role !== 'ADMIN') {
-      setError('Access Denied. You must be an admin to view this page.');
-      setLoading(false);
-      setTimeout(() => router.push('/'), 3000);
+    if (!storedUserData) {
+      router.push('/');
       return;
     }
+    const parsedUser = JSON.parse(storedUserData);
+    setUser(parsedUser);
 
-    const fetchData = async () => {
-      setError('');
+    const fetchAlerts = async (userId) => {
       try {
-        const [statsRes, usersRes, collectorsRes, analyticsRes] = await Promise.all([
-          fetch('/api/admin/stats'),
-          fetch('/api/admin/users'),
-          fetch('/api/admin/collectors'),
-          fetch('/api/admin/analytics'),
-        ]);
-
-        if (!statsRes.ok || !usersRes.ok || !collectorsRes.ok || !analyticsRes.ok) {
-          throw new Error('Failed to fetch admin data.');
-        }
-
-        const statsData = await statsRes.json();
-        const usersData = await usersRes.json();
-        const collectorsData = await collectorsRes.json();
-        const analyticsResult = await analyticsRes.json();
-
-        setSystemStats(statsData);
-        setUsers(usersData);
-        setCollectors(collectorsData);
-        setAnalyticsData(analyticsResult);
-
+        const response = await fetch(/api/users/${userId}/alerts);
+        if (!response.ok) throw new Error('Failed to fetch alerts.');
+        const data = await response.json();
+        setWasteAlerts(data.alerts);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
+    if (parsedUser?.id) fetchAlerts(parsedUser.id);
+    else setLoading(false);
   }, [router]);
 
-  const handleApprove = async (collectorId) => { /* ... approve logic ... */ };
-  const handleDelete = async (type, userId) => { /* ... delete logic ... */ };
-  const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
+  // Set window dimensions for confetti
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
 
-  const renderContent = () => {
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
-    if (error) return <Alert severity="error">{error}</Alert>;
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-    switch (activeTab) {
-      case 'overview':
-        return (
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="textSecondary">Total Users</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{systemStats.totalUsers?.toLocaleString() || 0}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="textSecondary">Total Collectors</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{systemStats.totalCollectors?.toLocaleString() || 0}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="textSecondary">Materials Collected</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{systemStats.materialsCollected?.toLocaleString() || 0}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper><Typography color="textSecondary">Total Weight (kg)</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{systemStats.totalWeight?.toLocaleString() || 0}</Typography></StyledPaper></Grid>
-          </Grid>
-        );
-      case 'users':
-        return (
-          <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{ color: '#2E7D32' }}>User Management</Typography>
-            <TableContainer><Table><TableHead><TableRow><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Join Date</TableCell><TableCell>Address</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>{users.map((user) => (<TableRow key={user.id} hover><TableCell>{user.householdProfile?.name}</TableCell><TableCell>{user.email}</TableCell><TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell><TableCell>{user.householdProfile?.address}</TableCell><TableCell><IconButton color="error" onClick={() => handleDelete('user', user.id)}><DeleteIcon /></IconButton></TableCell></TableRow>))}</TableBody></Table></TableContainer>
-          </StyledPaper>
-        );
-      case 'collectors':
-        return (
-          <StyledPaper>
-            <Typography variant="h6" gutterBottom sx={{ color: '#2E7D32' }}>Pending Collector Approvals</Typography>
-            <TableContainer><Table><TableHead><TableRow><TableCell>Name</TableCell><TableCell>Email</TableCell><TableCell>Join Date</TableCell><TableCell>Address</TableCell><TableCell>Actions</TableCell></TableRow></TableHead><TableBody>{collectors.map((collector) => (<TableRow key={collector.id} hover><TableCell>{collector.collectorProfile?.name}</TableCell><TableCell>{collector.email}</TableCell><TableCell>{new Date(collector.createdAt).toLocaleDateString()}</TableCell><TableCell>{collector.collectorProfile?.address}</TableCell><TableCell><IconButton color="success" onClick={() => handleApprove(collector.id)}><CheckIcon /></IconButton><IconButton color="error" onClick={() => handleDelete('collector', collector.id)}><DeleteIcon /></IconButton></TableCell></TableRow>))}</TableBody></Table></TableContainer>
-          </StyledPaper>
-        );
-      case 'analytics':
-        return <AnalyticsDashboard analyticsData={analyticsData} />;
-      default:
-        return null;
+  // State for chatbot initial message
+  const [chatbotInitialMessage, setChatbotInitialMessage] = useState('');
+
+  // Handle tab and message query parameters
+  useEffect(() => {
+    const { tab, message, ...otherQuery } = router.query;
+    
+    if (tab && !isNaN(parseInt(tab))) {
+      setActiveTab(parseInt(tab));
+    }
+    if (message) {
+      setChatbotInitialMessage(decodeURIComponent(message));
+    }
+    
+    // Clean the URL after processing the parameters (only if we have tab or message)
+    if (tab || message) {
+      // Use setTimeout to avoid modifying router during render
+      const timer = setTimeout(() => {
+        const cleanQuery = Object.keys(otherQuery).length > 0 ? otherQuery : {};
+        router.replace({
+          pathname: router.pathname,
+          query: cleanQuery
+        }, undefined, { shallow: true });
+      }, 500); // Give a bit more time for state to settle
+      
+      return () => clearTimeout(timer);
+    }
+  }, [router.query]);
+
+  const handleFileChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      setImageFile(event.target.files[0]);
     }
   };
 
-  const handleTabClick = (tabKey) => {
-    setActiveTab(tabKey);
+  const handleCreateAlert = async () => {
+    if (!newAlertData.wasteType || !newAlertData.weightEstimate || !newAlertData.pickupAddress || !newAlertData.pickupTimeSlot) {
+      setError('Please fill all required fields in the form.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+
+    let imageUrl = '';
+    if (imageFile) {
+      try {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = ${user.id}-${Date.now()}.${fileExt};
+        const filePath = public/${fileName};
+
+        let { error: uploadError } = await supabase.storage
+          .from('waste-images')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('waste-images').getPublicUrl(filePath);
+        if (!data.publicUrl) throw new Error("Could not get public URL for the image.");
+
+        imageUrl = data.publicUrl;
+      } catch (uploadError) {
+        setError(Image Upload Failed: ${uploadError.message});
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Use location coordinates from classification if available, otherwise use placeholder
+    const coords = {
+      lat: newAlertData.pickupLatitude || 12.9716,
+      lng: newAlertData.pickupLongitude || 77.5946
+    };
+
+    try {
+      const response = await fetch('/api/alerts/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newAlertData,
+          weightEstimate: parseFloat(newAlertData.weightEstimate),
+          createdById: user.id,
+          pickupLatitude: coords.lat,
+          pickupLongitude: coords.lng,
+          imageUrl: imageUrl,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setWasteAlerts([result.alert, ...wasteAlerts]);
+        setOpenDialog(false);
+        setNewAlertData({
+          wasteType: 'PLASTIC',
+          description: '',
+          weightEstimate: '',
+          pickupAddress: '',
+          pickupTimeSlot: '',
+          pickupLatitude: null,
+          pickupLongitude: null,
+        });
+        setImageFile(null);
+        
+        // Trigger celebration effects
+        setShowConfetti(true);
+        toast.success('🎉 Thanks for being part of building a cleaner city! Your waste alert has been posted successfully.', {
+          duration: 6000,
+          style: {
+            background: '#4CAF50',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '12px',
+            fontSize: '16px',
+            fontWeight: '500',
+          },
+          icon: '🌱',
+        });
+        
+        // Stop confetti after 5 seconds
+        setTimeout(() => {
+          setShowConfetti(false);
+        }, 5000);
+      } else {
+        setError(result.message || 'Failed to create alert.');
+      }
+    } catch (err) {
+      setError('Could not connect to the server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const pageTitle = adminNavItems.find(item => item.key === activeTab)?.name || 'Admin Dashboard';
+  const handleClassificationComplete = (classificationData) => {
+    // Set the image file from the classification
+    if (classificationData.image) {
+      setImageFile(classificationData.image);
+    }
+    
+    // Use the mapped system waste type if available, otherwise fallback to biodegradability logic
+    const mappedWasteType = classificationData.classification.system_waste_type || 
+      (classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE');
+    
+    console.log("🎯 Using mapped waste type:", mappedWasteType);
+    
+    // Set the location data if available
+    if (classificationData.location && classificationData.location.address) {
+      setNewAlertData(prev => ({
+        ...prev,
+        pickupAddress: classificationData.location.address,
+        pickupLatitude: classificationData.location.latitude,
+        pickupLongitude: classificationData.location.longitude,
+        description: AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''},
+        wasteType: mappedWasteType
+      }));
+    } else {
+      setNewAlertData(prev => ({
+        ...prev,
+        description: AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''},
+        wasteType: mappedWasteType
+      }));
+    }
+    setOpenDialog(true);
+  };
+
+  const handlePostAlertFromChat = (wasteDescription) => {
+    // 1. Pre-fill the alert form with info from the chat
+    setNewAlertData(prev => ({
+      ...prev,
+      wasteType: 'PLASTIC', // Set a default, user can refine
+      description: Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.,
+      // Reset other fields
+      weightEstimate: '',
+      pickupAddress: '',
+      pickupTimeSlot: '',
+      pickupLatitude: null,
+      pickupLongitude: null,
+    }));
+
+    // 2. Switch to the AI Classifier tab
+    setActiveTab(1);
+    
+    // 3. Open the dialog to continue creating the alert
+    setOpenDialog(true);
+  };
+
+  if (loading && !user) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#e9f5ec' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ minHeight: '100vh', overflow: 'hidden', position: 'relative', background: '#e9f5ec' }}>
-      <Particles id="tsparticles" init={particlesInit} options={{ background: { color: { value: '#ffffff00' } }, fpsLimit: 60, interactivity: { events: { onHover: { enable: true, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } }, particles: { color: { value: '#4CAF50' }, links: { enable: true, color: '#4CAF50', distance: 150 }, move: { enable: true, speed: 1.5 }, size: { value: { min: 1, max: 3 } }, number: { value: 60 } } }} style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }} />
+    <Box sx={{ minHeight: '100vh', overflowX: 'hidden', position: 'relative', background: '#e9f5ec' }} className="transition-all duration-300 ease-in-out">
+      {/* Confetti Effect */}
+      {showConfetti && (
+        <Confetti
+          width={windowDimensions.width}
+          height={windowDimensions.height}
+          recycle={false}
+          numberOfPieces={300}
+          gravity={0.3}
+          style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999 }}
+        />
+      )}
+      
+      {/* Toast Notifications */}
+      <Toaster position="top-center" />
+      
+      <Particles
+        id="tsparticles"
+        init={particlesInit}
+        options={{
+          background: { color: { value: '#ffffff00' } },
+          fpsLimit: 60,
+          interactivity: { events: { onHover: { enable: !isMobile, mode: 'repulse' } }, modes: { repulse: { distance: 100 } } },
+          particles: {
+            color: { value: '#4CAF50' },
+            links: { enable: true, color: '#4CAF50', distance: 120 },
+            move: { enable: true, speed: 1 },
+            size: { value: { min: 1, max: 2.5 } },
+            number: { value: isMobile ? 30 : 60 }
+          }
+        }}
+        style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }}
+      />
 
-      <DashboardLayout
-        navItems={adminNavItems.map(item => ({ ...item, path: undefined, onClick: () => handleTabClick(item.key) }))}
-        pageTitle={pageTitle}
-      >
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Typography variant="h4" gutterBottom sx={{ color: '#2E7D32', fontWeight: 'bold' }}>
-            {pageTitle}
-          </Typography>
-          {renderContent()}
-        </motion.div>
+      <DashboardLayout navItems={userNavItems} pageTitle="User Dashboard">
+        <div style={{ opacity: 1, visibility: 'visible' }} className="animate-fade-in">
+          <Box sx={{ mb: 4 }}>
+            <Typography
+              variant={isMobile ? 'h5' : 'h4'}
+              gutterBottom
+              sx={{ color: '#4CAF50', fontWeight: 'bold' }}
+            >
+              {t('userDashboard.welcomeMessage', { name: user?.profile?.name || 'User' })}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {t('userDashboard.welcomeDescription')}
+            </Typography>
+          </Box>
 
-        <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose}>
-          <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+          <Grid container spacing={isMobile ? 1 : 3} sx={{ mb: 4 }} className="animate-fade-in">
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.totalPosts')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.pending')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.inProgress')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.completed')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
+          </Grid>
+
+          <StyledPaper>
+            <Tabs
+              value={activeTab}
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+              sx={{ borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.alerts')} icon={<EcoIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.aiClassifier')} icon={<AnalyticsIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.findCollectors')} icon={<MapIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.chatbot')} icon={<ChatbotIcon />} />
+              <Tab label={isMobile ? '' : t('userDashboard.tabs.wasteGuide')} icon={<GuideIcon />} />
+            </Tabs>
+
+            <TabPanel value={activeTab} index={0}>
+              {loading ? <CircularProgress /> : error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+              <Stack spacing={2}>
+                {wasteAlerts.length > 0 ? (
+                  wasteAlerts.map((alert) => <AlertCard key={alert.id} alert={alert} />)
+                ) : (
+                  !loading && <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>{t('userDashboard.noAlertsMessage')}</Typography>
+                )}
+              </Stack>
+            </TabPanel>
+            <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
+            <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
+            <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot onPostAlertFromChat={handlePostAlertFromChat} initialMessage={chatbotInitialMessage} /></TabPanel>
+            <TabPanel value={activeTab} index={4}>
+              <WasteGuide />
+            </TabPanel>
+          </StyledPaper>
+
+          <Fab
+            sx={{ position: 'fixed', bottom: 16, right: 16, backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}
+            aria-label="Create new alert"
+            onClick={() => setOpenDialog(true)}
+            className="hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-pulse"
+          >
+            <AddIcon sx={{ color: 'white' }} />
+          </Fab>
+
+          <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ color: '#2E7D32' }}>{t('userDashboard.postAlert.title')}</DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="TEXTILE">{t('userDashboard.postAlert.wasteTypes.textile')}</MenuItem><MenuItem value="BULBS">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="OTHER">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12} sm={6}><TextField fullWidth label={t('userDashboard.postAlert.estimatedWeight')} type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
+                <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.pickupAddress')} value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
+                <Grid item xs={12}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.preferredPickupTime')}</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label={t('userDashboard.postAlert.preferredPickupTime')}><MenuItem value="9am-12pm">{t('userDashboard.postAlert.timeSlots.morning')}</MenuItem><MenuItem value="12pm-3pm">{t('userDashboard.postAlert.timeSlots.afternoon')}</MenuItem><MenuItem value="3pm-6pm">{t('userDashboard.postAlert.timeSlots.evening')}</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.description')} multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
+                <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? t('userDashboard.postAlert.selectedImage', { filename: imageFile.name }) : t('userDashboard.postAlert.uploadImage')}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenDialog(false)}>{t('userDashboard.postAlert.cancel')}</Button>
+              <Button onClick={handleCreateAlert} variant="contained" disabled={loading} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{loading ? <CircularProgress size={24} /> : t('userDashboard.postAlert.createAlert')}</Button>
+            </DialogActions>
+          </Dialog>
+        </div>
       </DashboardLayout>
     </Box>
   );
