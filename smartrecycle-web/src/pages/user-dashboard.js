@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import dynamic from 'next/dynamic';
@@ -36,9 +36,7 @@ import {
   Person as PersonIcon,
   Upload as UploadIcon,
   Book as GuideIcon,
-  MonetizationOn as IncentiveIcon, // Added for incentive display
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 import Confetti from 'react-confetti';
@@ -101,11 +99,7 @@ export default function UserDashboard() {
   const [wasteAlerts, setWasteAlerts] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newAlertData, setNewAlertData] = useState({
-<<<<<<< HEAD
-    wasteType: '',
-=======
     wasteType: 'PLASTIC',
->>>>>>> 2afac7eda8a727842d25a5ce142ac1be43f1892e
     description: '',
     weightEstimate: '',
     pickupAddress: '',
@@ -116,7 +110,6 @@ export default function UserDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
-  const [incentives, setIncentives] = useState([]); // ADDED: State to store incentive prices
 
   const userNavItems = [
     { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
@@ -136,44 +129,21 @@ export default function UserDashboard() {
     const parsedUser = JSON.parse(storedUserData);
     setUser(parsedUser);
 
-    const fetchInitialData = async (userId) => {
+    const fetchAlerts = async (userId) => {
       try {
-        // Fetch both alerts and incentives at the same time
-        const [alertsRes, incentivesRes] = await Promise.all([
-          fetch(`/api/users/${userId}/alerts`),
-          fetch('/api/admin/incentives') // Fetch incentive prices
-        ]);
-
-        if (!alertsRes.ok) throw new Error('Failed to fetch alerts.');
-        if (!incentivesRes.ok) throw new Error('Failed to fetch incentives.');
-
-        const alertsData = await alertsRes.json();
-        const incentivesData = await incentivesRes.json();
-        
-        setWasteAlerts(alertsData.alerts);
-        setIncentives(incentivesData);
+        const response = await fetch(`/api/users/${userId}/alerts`);
+        if (!response.ok) throw new Error('Failed to fetch alerts.');
+        const data = await response.json();
+        setWasteAlerts(data.alerts);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
-    if (parsedUser?.id) fetchInitialData(parsedUser.id);
+    if (parsedUser?.id) fetchAlerts(parsedUser.id);
     else setLoading(false);
   }, [router]);
-
-  // ADDED: Calculate estimated incentive in real-time
-  const estimatedIncentive = useMemo(() => {
-    if (!newAlertData.wasteType || !newAlertData.weightEstimate) {
-      return '0.00';
-    }
-    const incentiveRate = incentives.find(i => i.wasteType === newAlertData.wasteType);
-    if (!incentiveRate) {
-      return '0.00';
-    }
-    return (parseFloat(newAlertData.weightEstimate) * incentiveRate.pricePerKg).toFixed(2);
-  }, [newAlertData.wasteType, newAlertData.weightEstimate, incentives]);
 
   // Set window dimensions for confetti
   useEffect(() => {
@@ -282,11 +252,7 @@ export default function UserDashboard() {
         setWasteAlerts([result.alert, ...wasteAlerts]);
         setOpenDialog(false);
         setNewAlertData({
-<<<<<<< HEAD
-          wasteType: '',
-=======
           wasteType: 'PLASTIC',
->>>>>>> 2afac7eda8a727842d25a5ce142ac1be43f1892e
           description: '',
           weightEstimate: '',
           pickupAddress: '',
@@ -361,11 +327,7 @@ export default function UserDashboard() {
     // 1. Pre-fill the alert form with info from the chat
     setNewAlertData(prev => ({
       ...prev,
-<<<<<<< HEAD
-      wasteType: '', // Set a default, user can refine
-=======
       wasteType: 'PLASTIC', // Set a default, user can refine
->>>>>>> 2afac7eda8a727842d25a5ce142ac1be43f1892e
       description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
       // Reset other fields
       weightEstimate: '',
@@ -494,44 +456,12 @@ export default function UserDashboard() {
             <DialogTitle sx={{ color: '#2E7D32' }}>{t('userDashboard.postAlert.title')}</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-<<<<<<< HEAD
-                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Waste Type</InputLabel>
-                <Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type"><MenuItem value="ORGANIC">Organic</MenuItem>
-                    <MenuItem value="PLASTIC">Plastic</MenuItem>
-                    <MenuItem value="PAPER">Paper</MenuItem>
-                    <MenuItem value="METAL">Metal</MenuItem>
-                    <MenuItem value="GLASS">Glass</MenuItem>
-                    <MenuItem value="E_WASTE">E-Waste</MenuItem>
-                    <MenuItem value="BULBS_LIGHTING">Bulbs/Lighting</MenuItem>
-                    <MenuItem value="CONSTRUCTION_DEBRIS">Construction Debris</MenuItem>
-                    <MenuItem value="SANITARY_WASTE">Sanitary Waste</MenuItem>
-                    <MenuItem value="MEDICAL">Medical</MenuItem>
-                    <MenuItem value="GENERAL">Other Dry Waste (General)</MenuItem>
-                    </Select></FormControl></Grid>
-                <Grid item xs={12} sm={6}><TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
-                <Grid item xs={12}><TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
-                <Grid item xs={12}><FormControl fullWidth><InputLabel>Preferred Pickup Time Slot</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label="Preferred Pickup Time Slot"><MenuItem value="9am-12pm">Morning (9 AM - 12 PM)</MenuItem><MenuItem value="12pm-3pm">Afternoon (12 PM - 3 PM)</MenuItem><MenuItem value="3pm-6pm">Evening (3 PM - 6 PM)</MenuItem></Select></FormControl></Grid>
-                <Grid item xs={12}><TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
-                <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? `Selected: ${imageFile.name}` : 'Upload Image (Optional)'}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
-                <Grid item xs={12}>
-                  <Paper variant="outlined" sx={{ p: 2, mt: 1, textAlign: 'center', borderColor: 'primary.main' }}>
-                      <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                          <IncentiveIcon color="primary" />
-                          Estimated Incentive Value: 
-                          <Typography component="span" variant="h6" color="primary.main" fontWeight="bold">
-                              ₹{estimatedIncentive}
-                          </Typography>
-                      </Typography>
-                  </Paper>
-                </Grid>
-=======
                 <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="TEXTILE">{t('userDashboard.postAlert.wasteTypes.textile')}</MenuItem><MenuItem value="BULBS">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="OTHER">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12} sm={6}><TextField fullWidth label={t('userDashboard.postAlert.estimatedWeight')} type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
                 <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.pickupAddress')} value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
                 <Grid item xs={12}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.preferredPickupTime')}</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label={t('userDashboard.postAlert.preferredPickupTime')}><MenuItem value="9am-12pm">{t('userDashboard.postAlert.timeSlots.morning')}</MenuItem><MenuItem value="12pm-3pm">{t('userDashboard.postAlert.timeSlots.afternoon')}</MenuItem><MenuItem value="3pm-6pm">{t('userDashboard.postAlert.timeSlots.evening')}</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.description')} multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
                 <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? t('userDashboard.postAlert.selectedImage', { filename: imageFile.name }) : t('userDashboard.postAlert.uploadImage')}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
->>>>>>> 2afac7eda8a727842d25a5ce142ac1be43f1892e
               </Grid>
             </DialogContent>
             <DialogActions>
