@@ -151,6 +151,133 @@
     "language": "Language"
   },
   "wasteGuide": {
+    "organicWaste": {
+      "title": "Organic Waste (Green Bin)",
+      "description": "Biodegradable waste from kitchen and garden",
+      "kitchenWaste": {
+        "title": "Kitchen Waste",
+        "items": [
+          "Cooked food and leftovers",
+          "Uncooked kitchen scraps",
+          "Fruit and vegetable peels",
+          "Rotten fruits and vegetables",
+          "Eggshells",
+          "Chicken and fish bones",
+          "Tissue paper soiled with food",
+          "Used tea bags and coffee grounds",
+          "Leaf plates"
+        ]
+      },
+      "gardenWaste": {
+        "title": "Garden Waste",
+        "items": [
+          "Pooja flowers and garlands",
+          "Garden sweepings (fallen leaves, twigs, etc.)",
+          "Weeds"
+        ]
+      }
+    },
+    "dryWaste": {
+      "title": "Dry Waste (Blue Bag/Bin)",
+      "description": "Non-biodegradable, recyclable materials. All containers should be rinsed and dry before disposal.",
+      "plastic": {
+        "title": "Plastic",
+        "items": [
+          "Plastic covers, bottles, boxes, and other items",
+          "Milk and curd packets",
+          "Chips, biscuit, and toffee wrappers",
+          "Plastic cups"
+        ]
+      },
+      "paper": {
+        "title": "Paper",
+        "items": [
+          "Newspapers and magazines",
+          "Cardboard cartons and pizza boxes",
+          "Tetra Paks (juice/milk cartons)",
+          "Paper cups and plates",
+          "Stationery and junk mail"
+        ]
+      },
+      "metal": {
+        "title": "Metal",
+        "items": [
+          "Foil containers",
+          "Metal cans (beverage, food cans)"
+        ]
+      },
+      "glass": {
+        "title": "Glass",
+        "items": [
+          "Unbroken glass bottles and jars (Handle with care)"
+        ]
+      },
+      "otherDryWaste": {
+        "title": "Other Dry Waste",
+        "items": [
+          "Rubber and Thermocol (Styrofoam)",
+          "Old mops, dusters, and sponges",
+          "Coconut shells",
+          "Hair",
+          "Ceramics and wooden chips",
+          "Used cosmetics containers"
+        ]
+      },
+      "eWaste": {
+        "title": "E-waste (Electronic Waste)",
+        "description": "Hazardous - store separately and give to certified e-waste recycler",
+        "items": [
+          "Batteries",
+          "CDs and Tapes",
+          "Thermometers"
+        ]
+      },
+      "bulbsLighting": {
+        "title": "Bulbs & Lighting",
+        "description": "Handle with care as these are hazardous",
+        "items": [
+          "Bulbs, Tube lights, and CFLs"
+        ]
+      },
+      "constructionDebris": {
+        "title": "Construction Debris & Inerts",
+        "description": "Never mix with regular waste. Check with local municipality for collection services",
+        "items": [
+          "Rubble and bricks",
+          "Paints",
+          "Silt from drains",
+          "Cement powder",
+          "Broken glass",
+          "Flower pots (clay/ceramic)"
+        ]
+      }
+    },
+    "sanitaryWaste": {
+      "title": "Sanitary / Reject Waste (Red Bin)",
+      "description": "Non-recyclable and hazardous household waste that must be disposed of carefully",
+      "general": {
+        "title": "General Sanitary Waste",
+        "items": [
+          "Diapers and sanitary napkins",
+          "Bandages, used masks, and gloves",
+          "Contaminated cotton, gauze, or used tissues",
+          "Condoms",
+          "Expired or unused medicines",
+          "Nails",
+          "Swept dust",
+          "Cigarette butts"
+        ]
+      },
+      "sharps": {
+        "title": "Sharps",
+        "description": "All sharp objects MUST be wrapped carefully and thickly in newspaper or placed in a puncture-proof box before disposal",
+        "items": [
+          "Razors and blades",
+          "Syringes",
+          "Injection vials"
+        ]
+      }
+    },
     "reduce": {
       "title": "Reduce",
       "description": "Limit disposable products. Opt for reusable bags, bottles, and cutlery."
