@@ -42,7 +42,8 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 // Correct way to import Leaflet Routing Machine:
 // Import the side effect to register L.Routing.control
-import 'leaflet-routing-machine'; 
+import 'leaflet-routing-machine';
+import LocationAutocomplete from './LocationAutocomplete'; 
 
 // Fix for default markers - Essential for Leaflet to display markers correctly
 delete L.Icon.Default.prototype._getIconUrl;
@@ -431,6 +432,39 @@ const CollectorMap = ({ claimedMaterial }) => {
     }
   };
 
+  // Handle location selection from LocationAutocomplete component
+  const handleLocationAutocompleteSelect = (location) => {
+    setFromLocation(location.description);
+    
+    // Extract coordinates if available
+    if (location.lat && location.lng) {
+      const coords = [parseFloat(location.lat), parseFloat(location.lng)];
+      setFromCoordinates(coords);
+      setCollectorLocation(coords);
+    } else if (location.lat && location.lon) {
+      const coords = [parseFloat(location.lat), parseFloat(location.lon)];
+      setFromCoordinates(coords);
+      setCollectorLocation(coords);
+    }
+    // If Google Places API is used, we might need to fetch details for coordinates
+    else if (location.id && window.google && window.google.maps) {
+      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+      service.getDetails({
+        placeId: location.id,
+        fields: ['geometry']
+      }, (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+          const coords = [
+            place.geometry.location.lat(),
+            place.geometry.location.lng()
+          ];
+          setFromCoordinates(coords);
+          setCollectorLocation(coords);
+        }
+      });
+    }
+  };
+
   // Geocode a location string to coordinates using Nominatim
   const geocodeLocation = async (address, setCoordsState) => {
     try {
@@ -708,43 +742,12 @@ const CollectorMap = ({ claimedMaterial }) => {
 
             <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
               <Grid item xs={12} md={5}>
-                <Autocomplete
-                  freeSolo
-                  fullWidth
-                  options={locationSuggestions}
-                  getOptionLabel={(option) => typeof option === 'string' ? option : option.label}
+                <LocationAutocomplete
                   value={fromLocation}
-                  onInputChange={handleAddressInputChange}
-                  onChange={handleLocationSelect}
-                  loading={suggestionsLoading}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="From Location (Your Starting Point)"
-                      placeholder="Enter your starting address or coordinates"
-                      InputProps={{
-                        ...params.InputProps,
-                        startAdornment: <EditLocation sx={{ mr: 1, color: 'action.active' }} />,
-                        endAdornment: (
-                          <>
-                            {suggestionsLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                  renderOption={(props, option) => (
-                    <Box component="li" {...props} sx={{ display: 'block', p: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        {option.label.split(',')[0]} {/* Show first part boldly */}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {option.label.split(',').slice(1).join(',').trim()} {/* Rest in smaller text */}
-                      </Typography>
-                    </Box>
-                  )}
-                  noOptionsText={fromLocation.length < 3 ? "Type at least 3 characters for suggestions" : "No locations found"}
+                  onChange={setFromLocation}
+                  onSelect={handleLocationAutocompleteSelect}
+                  label="From Location (Your Starting Point)"
+                  placeholder="Enter your starting address or coordinates"
                 />
               </Grid>
               <Grid item xs={12} md={2}>

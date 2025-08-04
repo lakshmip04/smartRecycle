@@ -3,16 +3,13 @@ import dynamic from 'next/dynamic';
 import {
   Box, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem, TextField, Button, Grid, Alert, Paper, CircularProgress
 } from '@mui/material';
-import { LocationOn, Search } from '@mui/icons-material';
+import { LocationOn, Search, MyLocation } from '@mui/icons-material';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import LocationAutocomplete from './LocationAutocomplete';
 
-// --- IMPORTANT ---
-// This component is now correctly set up for dynamic import.
-// In your user-dashboard.js, import it like this:
-// const WasteCollectorMapWithNoSSR = dynamic(() => import('../components/WasteCollectorMap'), { ssr: false });
 
-// Fix for default markers
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
@@ -54,6 +51,7 @@ export default function WasteCollectorMap() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [nearestCollector, setNearestCollector] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [collectors, setCollectors] = useState([]); // State for live collector data
   
   const mapRef = useRef();
@@ -129,8 +127,67 @@ export default function WasteCollectorMap() {
     );
   };
 
+  // Handle location selection from autocomplete
+  const handleLocationSelect = (location) => {
+    setSelectedLocation(location);
+    setAddress(location.description);
+    
+    // Extract coordinates if available
+    if (location.lat && location.lng) {
+      const coords = [parseFloat(location.lat), parseFloat(location.lng)];
+      setUserLocation(coords);
+      findNearestCollector(coords);
+    } else if (location.lat && location.lon) {
+      const coords = [parseFloat(location.lat), parseFloat(location.lon)];
+      setUserLocation(coords);
+      findNearestCollector(coords);
+    }
+    // If Google Places API is used, we might need to fetch details for coordinates
+    else if (location.id && window.google && window.google.maps) {
+      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+      service.getDetails({
+        placeId: location.id,
+        fields: ['geometry']
+      }, (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+          const coords = [
+            place.geometry.location.lat(),
+            place.geometry.location.lng()
+          ];
+          setUserLocation(coords);
+          findNearestCollector(coords);
+        }
+      });
+    }
+  };
+
   const geocodeAddress = async () => {
-    // Geocoding logic to convert address string to lat/lng
+    if (!address) {
+      setError('Please enter an address');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=in&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        setUserLocation(coords);
+        findNearestCollector(coords);
+      } else {
+        setError('Address not found. Please try a different address.');
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
+      setError('Failed to find address. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const mapCenter = userLocation || [12.9718, 77.6412]; // Default to Bangalore
@@ -157,10 +214,28 @@ export default function WasteCollectorMap() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
-                <TextField fullWidth label="Enter Your Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Grid item xs={12} md={5}>
+              <LocationAutocomplete
+                value={address}
+                onChange={setAddress}
+                onSelect={handleLocationSelect}
+                label="Enter Your Address"
+                placeholder="e.g. MG Road, Bangalore"
+              />
             </Grid>
             <Grid item xs={12} md={2}>
+              <Button 
+                fullWidth 
+                variant="outlined" 
+                onClick={getCurrentLocation} 
+                disabled={loading} 
+                startIcon={<MyLocation />} 
+                sx={{ height: '56px' }}
+              >
+                GPS
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={1}>
               <Button fullWidth variant="contained" onClick={geocodeAddress} disabled={loading} startIcon={<Search />} sx={{ height: '56px' }}>
                 Find
               </Button>

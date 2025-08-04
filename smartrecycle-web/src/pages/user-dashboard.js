@@ -162,12 +162,27 @@ export default function UserDashboard() {
 
   // Handle tab and message query parameters
   useEffect(() => {
-    const { tab, message } = router.query;
+    const { tab, message, ...otherQuery } = router.query;
+    
     if (tab && !isNaN(parseInt(tab))) {
       setActiveTab(parseInt(tab));
     }
     if (message) {
       setChatbotInitialMessage(decodeURIComponent(message));
+    }
+    
+    // Clean the URL after processing the parameters (only if we have tab or message)
+    if (tab || message) {
+      // Use setTimeout to avoid modifying router during render
+      const timer = setTimeout(() => {
+        const cleanQuery = Object.keys(otherQuery).length > 0 ? otherQuery : {};
+        router.replace({
+          pathname: router.pathname,
+          query: cleanQuery
+        }, undefined, { shallow: true });
+      }, 500); // Give a bit more time for state to settle
+      
+      return () => clearTimeout(timer);
     }
   }, [router.query]);
 

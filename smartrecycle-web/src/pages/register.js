@@ -39,6 +39,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 import { supabase } from '../lib/supabaseClient'; // Import the supabase client
+import LocationAutocomplete from '../components/LocationAutocomplete';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,6 +58,10 @@ export default function RegisterPage() {
   const [vehicleDetails, setVehicleDetails] = useState('');
   const [acceptedWasteTypes, setAcceptedWasteTypes] = useState([]);
   const [identityDocument, setIdentityDocument] = useState(null); // State for the file
+  
+  // Location-specific state
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [coordinates, setCoordinates] = useState({ latitude: 12.9716, longitude: 77.5946 }); // Default Bangalore
   
   // General UI State
   const [loading, setLoading] = useState(false);
@@ -271,7 +276,8 @@ export default function RegisterPage() {
     // --- Step 2: Build the data payload for the API ---
     let registrationData = {
         name, email, phone, password, role, address,
-        latitude: 12.9716, longitude: 77.5946,
+        latitude: coordinates.latitude, 
+        longitude: coordinates.longitude,
     };
 
     if (role === 'HOUSEHOLD') {
@@ -341,6 +347,40 @@ export default function RegisterPage() {
     return acceptedWasteTypes.includes(wasteTypeKey);
   };
 
+  // Handle location selection from autocomplete
+  const handleLocationSelect = (location) => {
+    setSelectedLocation(location);
+    setAddress(location.description);
+    
+    // Extract coordinates if available
+    if (location.lat && location.lng) {
+      setCoordinates({
+        latitude: parseFloat(location.lat),
+        longitude: parseFloat(location.lng)
+      });
+    } else if (location.lat && location.lon) {
+      setCoordinates({
+        latitude: parseFloat(location.lat),
+        longitude: parseFloat(location.lon)
+      });
+    }
+    // If Google Places API is used, we might need to fetch details for coordinates
+    else if (location.id && window.google && window.google.maps) {
+      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+      service.getDetails({
+        placeId: location.id,
+        fields: ['geometry']
+      }, (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place.geometry) {
+          setCoordinates({
+            latitude: place.geometry.location.lat(),
+            longitude: place.geometry.location.lng()
+          });
+        }
+      });
+    }
+  };
+
   // Map hierarchical waste types to Prisma enum values
   const mapToEnumWasteTypes = (hierarchicalTypes) => {
     const mapping = {
@@ -379,7 +419,7 @@ export default function RegisterPage() {
             {!fadeOut && (
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -40 }} transition={{ duration: 0.7 }}>
                 <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, py: 4 }}>
-                    <Paper elevation={12} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, textAlign: 'center', backdropFilter: 'blur(8px)', background: 'rgba(255,255,255,0.92)', width: '100%', maxWidth: '480px' }}>
+                    <Paper elevation={12} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 4, textAlign: 'center', backdropFilter: 'blur(8px)', background: 'rgba(255,255,255,0.92)', width: '100%', maxWidth: '800px'  }}>
                         <Typography variant="h3" gutterBottom sx={{ color: '#4CAF50', fontWeight: 'bold' }}>SmartRecycle</Typography>
                         <Typography variant="h6" gutterBottom>Create an Account</Typography>
                         <Box component="form" onSubmit={handleRegister} sx={{ mt: 2 }}>
@@ -397,11 +437,31 @@ export default function RegisterPage() {
                             <Collapse in={role === 'HOUSEHOLD'}>
                                 <Divider sx={{ my: 2 }}>User Details</Divider>
                                 <TextField fullWidth required={role === 'HOUSEHOLD'} label="Date of Birth" type="date" InputLabelProps={{ shrink: true }} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} margin="normal" />
-                                <TextField fullWidth required={role === 'HOUSEHOLD'} label="Home Address" multiline rows={2} value={address} onChange={(e) => setAddress(e.target.value)} margin="normal" />
+                                <Box sx={{ mt: 2, mb: 1 }}>
+                                    <LocationAutocomplete
+                                        value={address}
+                                        onChange={setAddress}
+                                        onSelect={handleLocationSelect}
+                                        label="Home Address"
+                                        placeholder="Enter your home address..."
+                                        required={role === 'HOUSEHOLD'}
+                                        margin="normal"
+                                    />
+                                </Box>
                             </Collapse>
                             <Collapse in={role === 'COLLECTOR'}>
                                 <Divider sx={{ my: 2 }}>Collector Details</Divider>
-                                <TextField fullWidth required={role === 'COLLECTOR'} label="Service Area Address" multiline rows={2} value={address} onChange={(e) => setAddress(e.target.value)} margin="normal" />
+                                <Box sx={{ mt: 2, mb: 1 }}>
+                                    <LocationAutocomplete
+                                        value={address}
+                                        onChange={setAddress}
+                                        onSelect={handleLocationSelect}
+                                        label="Service Area Address"
+                                        placeholder="Enter your service area address..."
+                                        required={role === 'COLLECTOR'}
+                                        margin="normal"
+                                    />
+                                </Box>
                                 <TextField fullWidth label="Vehicle Details" value={vehicleDetails} onChange={(e) => setVehicleDetails(e.target.value)} margin="normal" />
                                 <Box sx={{ mt: 2, mb: 2 }}>
                                     <Typography variant="h6" gutterBottom>

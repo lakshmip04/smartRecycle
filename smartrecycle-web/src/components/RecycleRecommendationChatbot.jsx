@@ -77,6 +77,11 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat, initialMessage = ''
   useEffect(() => {
     if (initialMessage) {
       setInputMessage(initialMessage);
+      // Clear the initial message from parent after setting it locally
+      // This prevents it from persisting on subsequent visits
+      setTimeout(() => {
+        // The parent component should handle clearing the URL
+      }, 100);
     }
   }, [initialMessage]);
 
