@@ -314,12 +314,40 @@ const RecycleRecommendationChatbot = ({ onPostAlertFromChat, initialMessage = ''
     };
     const languageName = languageNames[languageCode] || 'English';
 
-    return `You are a 3R (Reduce, Reuse, Recycle) assistant. Please respond in ${languageName} following this exact format with star ratings:
+    return `You are a 3R (Reduce, Reuse, Recycle) assistant. Please respond in ${languageName} following this exact format:
+
+FIRST, categorize the waste item and provide the Prisma enum value:
+
+**WASTE CATEGORIZATION:**
+- **Main Category:** [Organic/Dry/Sanitary/Hazardous]
+- **Subtype:** [Specific type like Plastic, Metal, Kitchen Waste, etc.]
+- **Prisma Enum:** [GENERAL/RECYCLABLE/E_WASTE/ORGANIC/HAZARDOUS/CONSTRUCTION_DEBRIS/MEDICAL/PLASTIC/PAPER/METAL/GLASS/BULBS_LIGHTING/SANITARY_WASTE]
+
+**WASTE CLASSIFICATION GUIDE:**
+- **ORGANIC:** Kitchen waste, garden waste, food scraps, fruit peels, cooked food
+- **PLASTIC:** Plastic bottles, covers, containers, packaging
+- **PAPER:** Newspapers, magazines, cardboard, paper products
+- **METAL:** Metal cans, foil containers, metal items
+- **GLASS:** Glass bottles, jars, glass items
+- **E_WASTE:** Electronic items, batteries, CDs, electronic waste
+- **BULBS_LIGHTING:** Bulbs, tube lights, CFLs, lighting items
+- **CONSTRUCTION_DEBRIS:** Rubble, bricks, construction materials
+- **MEDICAL:** Medical waste, medicines, medical items
+- **HAZARDOUS:** Hazardous chemicals, toxic materials
+- **SANITARY_WASTE:** Sanitary napkins, diapers, personal hygiene items
+- **GENERAL:** Items that don't fit other categories
+
+THEN provide star ratings and advice:
 
 EXAMPLES:
 
 User: "Shampoo and conditioner bottles"
-Assistant: Shampoo and conditioner bottles are great candidates for recycling! Here's the best way to handle them. 🧴
+Assistant: **WASTE CATEGORIZATION:**
+- **Main Category:** Dry
+- **Subtype:** Plastic
+- **Prisma Enum:** PLASTIC
+
+Shampoo and conditioner bottles are great candidates for recycling! Here's the best way to handle them. 🧴
 
 ⭐⭐⭐⭐⭐ **REDUCE**
 Switch to solid shampoo and conditioner bars. They work great and completely eliminate plastic packaging.
@@ -330,33 +358,43 @@ A great option! These bottles are typically made from easily recyclable plastic 
 ⭐⭐ **REUSE**
 They can be refilled with product from bulk-buy stores if you have access to one.
 
-User: "Bubble wrap"
-Assistant: Bubble wrap is fun to pop, but let's see how we can handle it sustainably! 뽁뽁
+User: "Banana peels"
+Assistant: **WASTE CATEGORIZATION:**
+- **Main Category:** Organic
+- **Subtype:** Kitchen Waste
+- **Prisma Enum:** ORGANIC
 
-⭐⭐⭐⭐⭐ **REUSE**
-This is the best option! Keep it and reuse it for shipping your own packages or for safely storing fragile items at home.
+Banana peels are perfect for composting! Here's how to handle them sustainably. 🍌
 
-⭐⭐⭐ **RECYCLE**
-It can be recycled, but it must be bundled with other plastic films/bags. Don't put loose sheets in your recycling as they can jam machinery. Place it in a larger plastic bag with other soft plastics.
-
-⭐ **REDUCE**
-Request minimal or plastic-free packaging when ordering items online.
-
-User: "Yogurt or curd cups"
-Assistant: Those small plastic cups from yogurt or curd add up. Here's the plan: 🥣
-
-⭐⭐⭐⭐⭐ **REDUCE**
-Make your own curd at home or buy it in larger tubs instead of individual cups. This significantly reduces plastic waste.
+⭐⭐⭐⭐⭐ **RECYCLE**
+Compost them! Banana peels are excellent for composting and create rich soil for your garden.
 
 ⭐⭐⭐ **REUSE**
-They are perfect for starting seeds for a small garden or for organizing small items like paper clips and buttons.
+Use them to polish silverware or as a natural fertilizer for plants.
 
-⭐⭐ **RECYCLE**
-Rinse them thoroughly to remove all food residue and place them in your dry waste bin. Make sure they are completely dry.
+⭐⭐ **REDUCE**
+Buy only what you need to minimize food waste.
+
+User: "Old batteries"
+Assistant: **WASTE CATEGORIZATION:**
+- **Main Category:** Hazardous
+- **Subtype:** Electronic Waste
+- **Prisma Enum:** E_WASTE
+
+Old batteries need special handling due to their hazardous nature! 🔋
+
+⭐⭐⭐⭐⭐ **RECYCLE**
+Take them to certified e-waste recyclers or battery collection points. Never throw in regular waste.
+
+⭐⭐ **REDUCE**
+Switch to rechargeable batteries to reduce waste.
+
+⭐ **REUSE**
+Limited reuse options due to safety concerns.
 
 Now respond to: "${userMessage}"
 
-Follow the exact format: Start with a friendly intro, then give star ratings (⭐) from 1-5 for each category (**REDUCE**, **REUSE**, **RECYCLE**) based on how effective that option is for this item. Higher stars = better option. Include practical, specific advice for each category.`;
+Follow the exact format: Start with **WASTE CATEGORIZATION** section, then provide star ratings (⭐) from 1-5 for each category (**REDUCE**, **REUSE**, **RECYCLE**) based on how effective that option is for this item. Higher stars = better option. Include practical, specific advice for each category.`;
   };
 
   // Function to format markdown content for better display
@@ -387,6 +425,15 @@ Follow the exact format: Start with a friendly intro, then give star ratings (�
     { text: t('quickSuggestions.glassContainers'), icon: "🍶" },
   ];
 
+  // Function to extract Prisma enum value from chatbot response
+  const extractPrismaEnum = (botResponse) => {
+    const enumMatch = botResponse.match(/\*\*Prisma Enum:\*\*\s*([A-Z_]+)/);
+    if (enumMatch) {
+      return enumMatch[1];
+    }
+    return 'GENERAL'; // Default fallback
+  };
+
   const handleSendMessage = async () => {
     const messageToSend = inputMessage.trim();
     if (!messageToSend) return;
@@ -408,7 +455,13 @@ Follow the exact format: Start with a friendly intro, then give star ratings (�
 
       const data = await response.json();
       const botResponseText = data.content;
-      const botMessage = { id: Date.now() + 1, type: 'bot', content: botResponseText, timestamp: new Date() };
+      const botMessage = { 
+        id: Date.now() + 1, 
+        type: 'bot', 
+        content: botResponseText, 
+        timestamp: new Date(),
+        prismaEnum: extractPrismaEnum(botResponseText) // Store the extracted enum value
+      };
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
       console.error('Error:', err);
