@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import prisma from '../../../lib/prisma'; // The number of '../' might change based on the file's location
+const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
   // In a real app, you would add admin role verification here for security.

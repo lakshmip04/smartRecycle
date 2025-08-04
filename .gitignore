@@ -82,3 +82,4 @@ coverage/
 .watchmanconfig 
 /smartrecycle-web/node_modules
 /generated/prisma
+.vercel

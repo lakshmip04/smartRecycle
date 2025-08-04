@@ -82,14 +82,34 @@ async function main() {
   const hashedPassword = await bcrypt.hash('password123', 10);
 
   // --- 3. Seed Household Users ---
-  
+  console.log('👤 Seeding 10 household users in Hyderabad...');
+  for (let i = 0; i < 10; i++) {
+    const location = faker.helpers.arrayElement(hyderabadLocations);
+    await prisma.user.create({
+        data: {
+            email: faker.internet.email({ firstName: `user${i}`}).toLowerCase(),
+            password: hashedPassword,
+            phone: faker.phone.number(),
+            role: Role.HOUSEHOLD,
+            householdProfile: {
+                create: {
+                    name: faker.person.fullName(),
+                    dateOfBirth: faker.date.birthdate(),
+                    address: `${faker.location.streetAddress()}, ${location.name}, Hyderabad`,
+                    latitude: faker.location.latitude({ min: location.lat - 0.05, max: location.lat + 0.05, precision: 6 }),
+                    longitude: faker.location.longitude({ min: location.lng - 0.05, max: location.lng + 0.05, precision: 6 }),
+                }
+            }
+        }
+    });
+  }
+  console.log('✅ 10 household users created.');
 
   // --- 4. Seed Collector Users ---
-  const collectorsToCreate = 66; // 11 types * 6 collectors each
-  console.log(`🚛 Seeding ${collectorsToCreate} specialized collectors in Hyderabad...`);
-  for (let i = 0; i < collectorsToCreate; i++) {
+  console.log(`🚛 Seeding ${collectorSpecializations.length} specialized collectors in Hyderabad...`);
+  for (let i = 0; i < collectorSpecializations.length; i++) {
     const location = faker.helpers.arrayElement(hyderabadLocations);
-    const specialization = collectorSpecializations[i % collectorSpecializations.length]; 
+    const specialization = collectorSpecializations[i]; 
 
     await prisma.user.create({
         data: {
@@ -99,7 +119,7 @@ async function main() {
             role: Role.COLLECTOR,
             collectorProfile: {
                 create: {
-                    name: `${specialization.name} #${Math.floor(i / collectorSpecializations.length) + 1}`,
+                    name: specialization.name,
                     address: `${faker.location.streetAddress()}, ${location.name}, Hyderabad`,
                     latitude: faker.location.latitude({ min: location.lat - 0.05, max: location.lat + 0.05, precision: 6 }),
                     longitude: faker.location.longitude({ min: location.lng - 0.05, max: location.lng + 0.05, precision: 6 }),
@@ -112,7 +132,7 @@ async function main() {
         }
     });
   }
-  console.log(`✅ ${collectorsToCreate} collectors created.`);
+  console.log(`✅ ${collectorSpecializations.length} collectors created.`);
 }
 
 main()
