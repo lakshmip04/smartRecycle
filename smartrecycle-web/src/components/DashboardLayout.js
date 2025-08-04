@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next';
 import {
   AppBar,
   Toolbar,
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children, navItems = [], pageTitle = "
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setIsMounted(true);
@@ -49,9 +51,9 @@ export default function DashboardLayout({ children, navItems = [], pageTitle = "
 
   // Default navItems if none are provided
   const defaultNavItems = [
-    { name: 'Materials', path: '/dashboard/materials', icon: <Recycling /> },
-    { name: 'Collections', path: '/dashboard/collections', icon: <LocalShipping /> },
-    { name: 'Profile', path: '/dashboard/profile', icon: <Person /> },
+    { name: t('sidebar.materials'), path: '/dashboard/materials', icon: <Recycling /> },
+    { name: t('sidebar.collections'), path: '/dashboard/collections', icon: <LocalShipping /> },
+    { name: t('sidebar.profile'), path: '/dashboard/profile', icon: <Person /> },
   ];
 
   const currentNavItems = navItems.length > 0 ? navItems : defaultNavItems;
@@ -117,7 +119,7 @@ export default function DashboardLayout({ children, navItems = [], pageTitle = "
             </Avatar>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                {user.profile?.name || 'User'}
+                {user.profile?.name || t('sidebar.user')}
               </Typography>
               <Typography variant="caption" color="textSecondary">
                 {user.email || 'user@example.com'}
@@ -158,7 +160,7 @@ export default function DashboardLayout({ children, navItems = [], pageTitle = "
             onClick={handleLogout}
             sx={{ display: { xs: 'none', sm: 'flex' } }}
           >
-            Logout
+            {t('sidebar.logout')}
           </Button>
         </Toolbar>
       </AppBar>

@@ -112,8 +112,8 @@ export default function UserDashboard() {
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
 
   const userNavItems = [
-    { name: 'Dashboard', path: '/user-dashboard', icon: <EcoIcon /> },
-    { name: 'My Profile', path: '/profile', icon: <PersonIcon /> },
+    { name: t('sidebar.dashboard'), path: '/user-dashboard', icon: <EcoIcon /> },
+    { name: t('sidebar.myProfile'), path: '/profile', icon: <PersonIcon /> },
   ];
 
   const particlesInit = async (main) => {
@@ -387,7 +387,7 @@ export default function UserDashboard() {
         style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, width: '100%', height: '100%' }}
       />
 
-      <DashboardLayout navItems={userNavItems} pageTitle="User Dashboard">
+      <DashboardLayout navItems={userNavItems} pageTitle="">
         <div style={{ opacity: 1, visibility: 'visible' }} className="animate-fade-in">
           <Box sx={{ mb: 4 }}>
             <Typography
