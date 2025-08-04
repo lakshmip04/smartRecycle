@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -34,9 +35,12 @@ import {
   Nature,
   Warning,
   Science,
+  LocationOn,
 } from '@mui/icons-material';
+import LocationAutocomplete from './LocationAutocomplete';
 
 const WasteClassifier = ({ onClassificationComplete, showInternalResults = true }) => {
+  const { t } = useTranslation();
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [classificationResult, setClassificationResult] = useState({
@@ -52,6 +56,14 @@ const WasteClassifier = ({ onClassificationComplete, showInternalResults = true 
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState(null);
   const [resultKey, setResultKey] = useState(0); // Add a key to force re-render
+  
+  // Location state management
+  const [locationData, setLocationData] = useState({
+    address: '',
+    latitude: null,
+    longitude: null
+  });
+  const [showLocationSection, setShowLocationSection] = useState(false);
 
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -60,23 +72,75 @@ const WasteClassifier = ({ onClassificationComplete, showInternalResults = true 
   // Cloudflare Worker Configuration
   const WORKER_URL = "https://gemini-worker.lakshmi20041304.workers.dev";
 
+  // Waste type mapping based on register.js
+  const wasteTypeMapping = {
+    'organicWaste.kitchenWaste': 'ORGANIC',
+    'organicWaste.gardenWaste': 'ORGANIC',
+    'dryWaste.plastic': 'PLASTIC',
+    'dryWaste.paper': 'PAPER',
+    'dryWaste.metal': 'METAL',
+    'dryWaste.glass': 'GLASS',
+    'dryWaste.otherDryWaste': 'OTHER',
+    'dryWaste.eWaste': 'E_WASTE',
+    'dryWaste.bulbsLighting': 'BULBS',
+    'dryWaste.constructionDebris': 'CONSTRUCTION_DEBRIS',
+    'sanitaryWaste.general': 'SANITARY',
+    'sanitaryWaste.sharps': 'MEDICAL'
+  };
+
+  // Reverse mapping for AI classification
+  const aiToWasteTypeMapping = {
+    'plastic': 'PLASTIC',
+    'paper': 'PAPER',
+    'metal': 'METAL',
+    'glass': 'GLASS',
+    'electronic': 'E_WASTE',
+    'organic': 'ORGANIC',
+    'medical': 'MEDICAL',
+    'hazardous': 'HAZARDOUS',
+    'textile': 'TEXTILE',
+    'bulbs': 'BULBS',
+    'construction': 'CONSTRUCTION_DEBRIS',
+    'sanitary': 'SANITARY',
+    'kitchen': 'ORGANIC',
+    'garden': 'ORGANIC',
+    'food': 'ORGANIC',
+    'battery': 'E_WASTE',
+    'electronics': 'E_WASTE'
+  };
+
   const classificationPrompt = `
 You are a waste classification assistant.
-Given an image, classify it into:
-1. If the image contains a human person (avoid human if seen partially), classify as "human"
-2. If it's actual waste, classify into one of: plastic, metal, medical, paper, electronic, organic, glass, textile, hazardous
-3. For biodegradability: biodegradable or non-biodegradable
+Given an image, classify it into one of these specific categories:
+
+ORGANIC WASTE:
+- Kitchen waste (food scraps, vegetable peels, cooked food, eggshells, tea bags, coffee grounds)
+- Garden waste (flowers, leaves, grass clippings, garden sweepings)
+
+DRY WASTE:
+- Plastic (bottles, containers, bags, wrappers, cups)
+- Paper (newspapers, magazines, cardboard, cartons, paper cups)
+- Metal (cans, foil containers, metal items)
+- Glass (bottles, jars, glass containers)
+- E-Waste (batteries, electronic devices, CDs, thermometers, bulbs)
+- Other dry waste (rubber, thermocol, old mops, sponges, coconut shells)
+
+SANITARY WASTE:
+- General sanitary (diapers, sanitary napkins, bandages, masks, gloves, tissues)
+- Medical/Sharps (razors, blades, syringes, injection vials)
+
+IMPORTANT: If the image contains a human person (avoid human if seen partially), classify as "human"
 
 Return your answer in this JSON format:
 {
-  "waste_type": "plastic",
-  "biodegradability": "non-biodegradable",
+  "waste_type": "kitchen",
+  "biodegradability": "biodegradable",
   "confidence": 95,
-  "recycling_instructions": "Clean and place in recycling bin",
-  "environmental_impact": "High - takes 450+ years to decompose"
+  "recycling_instructions": "Compost in organic waste bin",
+  "environmental_impact": "Low - decomposes naturally in 2-4 weeks"
 }
 
-IMPORTANT: If you detect a human in the image, respond with:
+IMPORTANT: If you detect a human with eyes and face in the image, respond with:
 {
   "waste_type": "human",
   "biodegradability": "biodegradable",
@@ -254,9 +318,21 @@ Only return the JSON.
         throw new Error('Failed to parse API response');
       }
 
+      // Map AI waste type to system waste type
+      const mappedWasteType = aiToWasteTypeMapping[result.waste_type.toLowerCase()] || result.waste_type.toUpperCase();
+      console.log("🔄 AI waste type:", result.waste_type);
+      console.log("🔄 Mapped to system waste type:", mappedWasteType);
+      
       // Update state with the result
       console.log("🔄 Setting classification result:", result);
       console.log("🔄 Waste type detected:", result.waste_type);
+      
+      // Create enhanced result with mapped waste type
+      const enhancedResult = {
+        ...result,
+        waste_type: result.waste_type, // Keep original for display
+        system_waste_type: mappedWasteType // Add mapped type for system use
+      };
       
       // Directly set the result instead of using spread operator
       setClassificationResult({
@@ -264,7 +340,8 @@ Only return the JSON.
         biodegradability: result.biodegradability,
         confidence: result.confidence,
         recycling_instructions: result.recycling_instructions,
-        environmental_impact: result.environmental_impact
+        environmental_impact: result.environmental_impact,
+        system_waste_type: mappedWasteType
       });
       setResultKey(prev => prev + 1); // Increment key to force re-render
 
@@ -275,10 +352,11 @@ Only return the JSON.
 
       // Callback to parent component
       if (onClassificationComplete) {
-        console.log("📤 Calling onClassificationComplete with result");
+        console.log("📤 Calling onClassificationComplete with enhanced result");
         onClassificationComplete({
           image: selectedImage,
-          classification: result
+          classification: enhancedResult,
+          location: locationData
         });
       }
     } catch (error) {
@@ -300,6 +378,7 @@ Only return the JSON.
 
   const getWasteTypeColor = (wasteType) => {
     const colors = {
+      // AI classification types
       plastic: '#ff5722',
       metal: '#607d8b',
       paper: '#8bc34a',
@@ -307,7 +386,30 @@ Only return the JSON.
       organic: '#4caf50',
       glass: '#00bcd4',
       textile: '#9c27b0',
-      hazardous: '#f44336'
+      hazardous: '#f44336',
+      medical: '#e91e63',
+      kitchen: '#4caf50',
+      garden: '#4caf50',
+      food: '#4caf50',
+      battery: '#3f51b5',
+      electronics: '#3f51b5',
+      bulbs: '#ff9800',
+      construction: '#795548',
+      sanitary: '#9c27b0',
+      // System waste types
+      PLASTIC: '#ff5722',
+      METAL: '#607d8b',
+      PAPER: '#8bc34a',
+      E_WASTE: '#3f51b5',
+      ORGANIC: '#4caf50',
+      GLASS: '#00bcd4',
+      TEXTILE: '#9c27b0',
+      HAZARDOUS: '#f44336',
+      MEDICAL: '#e91e63',
+      BULBS: '#ff9800',
+      CONSTRUCTION_DEBRIS: '#795548',
+      SANITARY: '#9c27b0',
+      OTHER: '#757575'
     };
     return colors[wasteType] || '#757575';
   };
@@ -318,6 +420,7 @@ Only return the JSON.
 
   const getWasteTypeIcon = (wasteType) => {
     const icons = {
+      // AI classification types
       plastic: '🥤',
       metal: '🔧',
       paper: '📄',
@@ -326,9 +429,40 @@ Only return the JSON.
       glass: '🍾',
       textile: '👕',
       hazardous: '☢️',
-      human: '👤'
+      medical: '🏥',
+      kitchen: '🍽️',
+      garden: '🌱',
+      food: '🍎',
+      battery: '🔋',
+      electronics: '💻',
+      bulbs: '💡',
+      construction: '🏗️',
+      sanitary: '🧻',
+      human: '👤',
+      // System waste types
+      PLASTIC: '🥤',
+      METAL: '🔧',
+      PAPER: '📄',
+      E_WASTE: '📱',
+      ORGANIC: '🍃',
+      GLASS: '🍾',
+      TEXTILE: '👕',
+      HAZARDOUS: '☢️',
+      MEDICAL: '🏥',
+      BULBS: '💡',
+      CONSTRUCTION_DEBRIS: '🏗️',
+      SANITARY: '🧻',
+      OTHER: '♻️'
     };
     return icons[wasteType] || '♻️';
+  };
+
+  const handleLocationSelect = (location) => {
+    setLocationData({
+      address: location.description,
+      latitude: location.latitude,
+      longitude: location.longitude
+    });
   };
 
   const resetClassifier = () => {
@@ -341,6 +475,12 @@ Only return the JSON.
         recycling_instructions: '',
         environmental_impact: ''
     });
+    setLocationData({
+      address: '',
+      latitude: null,
+      longitude: null
+    });
+    setShowLocationSection(false);
     setError('');
     stopCamera();
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -355,10 +495,10 @@ Only return the JSON.
         <CardContent>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
             <Recycling sx={{ mr: 1, color: 'primary.main' }} />
-            AI Waste Classifier
+            {t('wasteClassifier.title')}
           </Typography>
           <Typography variant="body2" color="textSecondary" gutterBottom>
-            Upload or capture an image to classify waste type and biodegradability
+            {t('wasteClassifier.description')}
           </Typography>
 
           <Grid container spacing={2} sx={{ mt: 2 }}>
@@ -370,7 +510,7 @@ Only return the JSON.
                 onClick={() => fileInputRef.current?.click()}
                 sx={{ py: 1.5 }}
               >
-                Upload Image
+                {t('wasteClassifier.uploadImage')}
               </Button>
               <input
                 ref={fileInputRef}
@@ -388,7 +528,7 @@ Only return the JSON.
                 onClick={handleCameraCapture}
                 sx={{ py: 1.5 }}
               >
-                Capture Image
+                {t('wasteClassifier.captureImage')}
               </Button>
             </Grid>
           </Grid>
@@ -447,14 +587,14 @@ Only return the JSON.
                   startIcon={<PhotoCamera />}
                   sx={{ mr: 1 }}
                 >
-                  Take Photo
+                  {t('wasteClassifier.takePhoto')}
                 </Button>
                 <Button
                   variant="outlined"
                   onClick={stopCamera}
                   color="error"
                 >
-                  Cancel
+                  {t('wasteClassifier.cancel')}
                 </Button>
               </Box>
             </Box>
@@ -484,15 +624,33 @@ Only return the JSON.
                 />
               </Paper>
 
+              {/* Location Selection Section */}
+              <Box sx={{ mt: 3, textAlign: 'left', maxWidth: '500px', mx: 'auto' }}>
+                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>
+                  <LocationOn sx={{ mr: 1 }} />
+                  {t('wasteClassifier.pickupLocation')}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  {t('wasteClassifier.pickupLocationDescription')}
+                </Typography>
+                <LocationAutocomplete
+                  value={locationData.address}
+                  onSelect={handleLocationSelect}
+                  label={t('wasteClassifier.pickupAddress')}
+                  placeholder={t('wasteClassifier.pickupAddressPlaceholder')}
+                  required={true}
+                />
+              </Box>
+
               <Box sx={{ mt: 2 }}>
                 <Button
                   variant="contained"
                   onClick={classifyWaste}
-                  disabled={loading}
+                  disabled={loading || !locationData.address}
                   startIcon={loading ? <CircularProgress size={20} /> : <Recycling />}
                   sx={{ mr: 1 }}
                 >
-                  {loading ? 'Analyzing...' : 'Classify Waste'}
+                  {loading ? t('wasteClassifier.analyzing') : t('wasteClassifier.classifyWaste')}
                 </Button>
                 <IconButton onClick={resetClassifier} color="error">
                   <Delete />
@@ -515,10 +673,10 @@ Only return the JSON.
          <CardContent>
            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
              <Science sx={{ mr: 1, color: 'primary.main' }} />
-             Classification Results
+             {t('wasteClassifier.classificationResults')}
              {classificationResult.waste_type && (
                <Typography variant="caption" sx={{ ml: 2, bgcolor: 'success.light', px: 1, py: 0.5, borderRadius: 1 }}>
-                 Results Available
+                 {t('wasteClassifier.resultsAvailable')}
                </Typography>
              )}
            </Typography>
@@ -527,7 +685,7 @@ Only return the JSON.
            {imagePreview && classificationResult.waste_type && (
              <Box sx={{ mb: 3, textAlign: 'center' }}>
                <Typography variant="subtitle1" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                 📸 Analyzed Image
+                 {t('wasteClassifier.analyzedImage')}
                </Typography>
                <Paper elevation={2} sx={{ p: 2, display: 'inline-block', borderRadius: 2 }}>
                  <img
@@ -555,12 +713,10 @@ Only return the JSON.
                  icon={<Warning fontSize="large" />}
                >
                  <Typography variant="h6" gutterBottom sx={{ color: '#d32f2f' }}>
-                   🚨 Human Detected in Image
+                   {t('wasteClassifier.humanDetected')}
                  </Typography>
                  <Typography variant="body1">
-                   Please upload images of waste materials only. The AI has detected a human in this image. 
-                   For proper waste classification, please capture or upload images containing only waste items 
-                   (plastic, metal, paper, electronics, etc.).
+                   {t('wasteClassifier.humanDetectedMessage')}
                  </Typography>
                </Alert>
              </>
