@@ -274,6 +274,25 @@ export default function UserDashboard() {
     setOpenDialog(true);
   };
 
+  const handlePostAlertFromChat = (wasteDescription) => {
+    // 1. Pre-fill the alert form with info from the chat
+    setNewAlertData(prev => ({
+      ...prev,
+      wasteType: 'GENERAL', // Set a default, user can refine
+      description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
+      // Reset other fields
+      weightEstimate: '',
+      pickupAddress: '',
+      pickupTimeSlot: '',
+    }));
+
+    // 2. Switch to the AI Classifier tab
+    setActiveTab(1);
+    
+    // 3. Open the dialog to continue creating the alert
+    setOpenDialog(true);
+  };
+
   if (loading && !user) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#e9f5ec' }}>
@@ -367,7 +386,7 @@ export default function UserDashboard() {
             </TabPanel>
             <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
             <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
-            <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot /></TabPanel>
+            <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot onPostAlertFromChat={handlePostAlertFromChat} /></TabPanel>
             <TabPanel value={activeTab} index={4}>
               <Grid container spacing={3} className="animate-fade-in">
                 {guideSteps.map((step, index) => (

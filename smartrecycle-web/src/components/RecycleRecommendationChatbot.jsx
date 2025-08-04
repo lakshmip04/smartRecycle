@@ -35,9 +35,10 @@ import {
   Pause,
   PlayArrow,
   Stop,
+  AddAlert as AddAlertIcon,
 } from '@mui/icons-material';
 
-const RecycleRecommendationChatbot = () => {
+const RecycleRecommendationChatbot = ({ onPostAlertFromChat }) => {
   const { t, i18n } = useTranslation();
   
   const [messages, setMessages] = useState([
@@ -432,7 +433,7 @@ Follow the exact format: Start with a friendly intro, then give star ratings (тн
         </Box>
 
         <Box sx={{ flexGrow: 1, overflow: 'auto', overflowY: 'scroll', p: 2, bgcolor: '#f5f5f5', maxHeight: 'calc(70vh - 200px)' }}>
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <Box key={message.id} sx={{ display: 'flex', justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', maxWidth: '80%', flexDirection: message.type === 'user' ? 'row-reverse' : 'row' }}>
                 <Avatar sx={{ bgcolor: message.type === 'user' ? '#2E7D32' : '#757575', mx: 1 }}>
@@ -457,38 +458,62 @@ Follow the exact format: Start with a friendly intro, then give star ratings (тн
                   </Paper>
 
                   {message.type === 'bot' && !message.isError && (
-                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-start' }}>
-                      {speakingMessageId !== message.id ? (
-                        <Tooltip title={t('chatbot.readAloud')}>
-                          <IconButton size="small" onClick={() => handlePlay(message.content, message.id)}>
-                            <VolumeUp fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      ) : (
-                        <Paper variant="outlined" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, p: 0.5, borderRadius: 2 }}>
-                          <Tooltip title={isPaused ? t('chatbot.resume') : t('chatbot.pause')}>
-                            <IconButton size="small" onClick={handlePauseResume}>
-                              {isPaused ? <PlayArrow fontSize="small" /> : <Pause fontSize="small" />}
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {speakingMessageId !== message.id ? (
+                          <Tooltip title={t('chatbot.readAloud')}>
+                            <IconButton size="small" onClick={() => handlePlay(message.content, message.id)}>
+                              <VolumeUp fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title={t('chatbot.stop')}>
-                            <IconButton size="small" onClick={handleStop}>
-                              <Stop fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <FormControl size="small" variant="standard" sx={{ minWidth: 60, '& .MuiInput-underline:before': { borderBottom: 'none' }, '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottom: 'none' } }}>
-                            <Select
-                              value={playbackRate}
-                              onChange={(e) => handleRateChange(e.target.value, message)}
-                              sx={{ fontSize: '0.8rem', '.MuiSelect-select:focus': { backgroundColor: 'transparent' } }}
-                            >
-                              <MenuItem value={0.5}>0.5x</MenuItem>
-                              <MenuItem value={1}>1x</MenuItem>
-                              <MenuItem value={1.5}>1.5x</MenuItem>
-                              <MenuItem value={2}>2x</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Paper>
+                        ) : (
+                          <Paper variant="outlined" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, p: 0.5, borderRadius: 2 }}>
+                            <Tooltip title={isPaused ? t('chatbot.resume') : t('chatbot.pause')}>
+                              <IconButton size="small" onClick={handlePauseResume}>
+                                {isPaused ? <PlayArrow fontSize="small" /> : <Pause fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t('chatbot.stop')}>
+                              <IconButton size="small" onClick={handleStop}>
+                                <Stop fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <FormControl size="small" variant="standard" sx={{ minWidth: 60, '& .MuiInput-underline:before': { borderBottom: 'none' }, '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottom: 'none' } }}>
+                              <Select
+                                value={playbackRate}
+                                onChange={(e) => handleRateChange(e.target.value, message)}
+                                sx={{ fontSize: '0.8rem', '.MuiSelect-select:focus': { backgroundColor: 'transparent' } }}
+                              >
+                                <MenuItem value={0.5}>0.5x</MenuItem>
+                                <MenuItem value={1}>1x</MenuItem>
+                                <MenuItem value={1.5}>1.5x</MenuItem>
+                                <MenuItem value={2}>2x</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Paper>
+                        )}
+                      </Box>
+
+                      {/* Add Alert button for the last bot message */}
+                      {index === messages.length - 1 && messages.length > 1 && onPostAlertFromChat && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<AddAlertIcon />}
+                          onClick={() => onPostAlertFromChat(messages[index - 1].content)}
+                          sx={{ 
+                            textTransform: 'none', 
+                            fontSize: '0.75rem', 
+                            color: '#4CAF50', 
+                            borderColor: '#4CAF50',
+                            '&:hover': {
+                              borderColor: '#2E7D32',
+                              backgroundColor: 'rgba(76, 175, 80, 0.04)'
+                            }
+                          }}
+                        >
+                          Post Alert for this
+                        </Button>
                       )}
                     </Box>
                   )}

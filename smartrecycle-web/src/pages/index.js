@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/router'; // Import Next.js router
+import { useRouter } from 'next/router';
+import { useTranslation } from 'react-i18next'; // Import translation hook
 import {
   Box,
   Container,
@@ -9,29 +10,34 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  ToggleButtonGroup, // Added for role selector
-  ToggleButton,      // Added for role selector
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 
+// NOTE: Ensure this path is correct for your project structure
+import LanguageSwitcher from '../components/LanguageSwitcher'; 
+
 // This is now your main Login Page component
 export default function LoginPage() {
+  // --- State and Hooks ---
+  const { t } = useTranslation(); // Initialize translation hook
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('HOUSEHOLD'); // Added state for role selection
+  const [role, setRole] = useState('HOUSEHOLD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fadeOut, setFadeOut] = useState(false);
-  const router = useRouter(); // Initialize the Next.js router
+  const router = useRouter();
 
-  // Particle engine initialization
+  // --- Particle Engine Initialization ---
   const particlesInit = async (main) => {
     await loadFull(main);
   };
 
-  // Helper function to determine where to redirect based on user role
+  // --- Helper Functions ---
   const getRedirectPath = (userRole) => {
     switch (userRole) {
       case 'ADMIN':
@@ -45,14 +51,13 @@ export default function LoginPage() {
     }
   };
 
-  // This function now calls your real backend API
+  // --- Event Handlers ---
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Use fetch to call the login API endpoint we created
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -64,14 +69,11 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Login was successful
         console.log('Login successful:', data.user);
         
-        // Store user data and selected role in localStorage
         localStorage.setItem('user_data', JSON.stringify(data.user));
-        localStorage.setItem('selected_role', role); // Store the selected role
+        localStorage.setItem('selected_role', role);
         
-        // Trigger the success animation and redirect
         setFadeOut(true);
         setTimeout(() => {
           const redirectPath = getRedirectPath(data.user.role);
@@ -79,13 +81,12 @@ export default function LoginPage() {
         }, 800);
 
       } else {
-        // Handle errors from the API
-        setError(data.message || 'An error occurred during login.');
+        setError(data.message || t('auth.genericError', 'An error occurred during login.'));
         setLoading(false);
       }
     } catch (err) {
-      // Handle network errors
-      setError('Could not connect to the server. Please try again later.');
+      // Use translation for network error
+      setError(t('auth.networkError', 'Could not connect to the server. Please try again later.'));
       setLoading(false);
     }
   };
@@ -143,12 +144,19 @@ export default function LoginPage() {
                 }}
               >
                 <Typography variant="h3" gutterBottom sx={{ color: '#4CAF50', fontWeight: 'bold' }}>
-                  SmartRecycle
+                  {/* Translated App Name */}
+                  {t('auth.appName', 'Ecodrop')} 
                 </Typography>
 
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
-                  Login to continue
+                  {/* Translated Subtitle */}
+                  {t('auth.loginTitle', 'Login to continue')}
                 </Typography>
+
+                {/* --- Language Switcher Added --- */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                  <LanguageSwitcher />
+                </Box>
 
                 <Box component="form" onSubmit={handleLogin} sx={{ mt: 2 }}>
                   {error && (
@@ -157,7 +165,6 @@ export default function LoginPage() {
                     </Alert>
                   )}
 
-                  {/* MODIFIED: Added Role Selector */}
                   <ToggleButtonGroup
                     color="primary"
                     value={role}
@@ -166,13 +173,15 @@ export default function LoginPage() {
                     fullWidth
                     sx={{ mb: 2 }}
                   >
-                    <ToggleButton value="HOUSEHOLD">👤 User</ToggleButton>
-                    <ToggleButton value="COLLECTOR">🚛 Collector</ToggleButton>
+                    {/* Translated Roles */}
+                    <ToggleButton value="HOUSEHOLD">{t('auth.roleUser', '👤 User')}</ToggleButton>
+                    <ToggleButton value="COLLECTOR">{t('auth.roleCollector', '🚛 Collector')}</ToggleButton>
                   </ToggleButtonGroup>
 
                   <TextField
                     fullWidth
-                    label="Email Address"
+                    // Translated Label
+                    label={t('auth.emailAddress', 'Email Address')}
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -183,7 +192,8 @@ export default function LoginPage() {
 
                   <TextField
                     fullWidth
-                    label="Password"
+                    // Translated Label
+                    label={t('auth.password', 'Password')}
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -206,7 +216,8 @@ export default function LoginPage() {
                       '&:hover': { backgroundColor: '#2E7D32' }
                     }}
                   >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+                    {/* Translated Button Text */}
+                    {loading ? <CircularProgress size={24} color="inherit" /> : t('auth.signIn', 'Sign In')}
                   </Button>
                   <Button
                     fullWidth
@@ -223,9 +234,9 @@ export default function LoginPage() {
                       }
                     }}
                   >
-                    New here? Register
+                    {/* Translated Button Text */}
+                    {t('auth.newHereRegister', 'New here? Register')}
                   </Button>
-
                 </Box>
               </Paper>
             </Container>

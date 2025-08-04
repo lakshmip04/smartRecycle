@@ -91,11 +91,11 @@
   },
   "languages": {
     "english": "English",
-    "hindi": "Hindi",
-    "kannada": "Kannada",
-    "telugu": "Telugu",
-    "malayalam": "Malayalam",
-    "tamil": "Tamil"
+    "hindi": "हिंदी",
+    "kannada": "ಕನ್ನಡ",
+    "telugu": "తెలుగు",
+    "malayalam": "മലയാളം",
+    "tamil": "தமிழ்"
   },
   "profile": {
     "title": "My Profile",
@@ -133,6 +133,22 @@
       "wasteGuide": "Waste Guide"
     },
     "noAlertsMessage": "No waste alerts posted yet. Click the '+' button to create one!"
+  },
+  "auth": {
+    "appName": "EcoDrop",
+    "appSubtitle": "Discover • Claim • Collect • Manage",
+    "loginTitle": "Login",
+    "selectRole": "Select Role",
+    "roleUser": "👤 User",
+    "roleCollector": "🚛 Waste Collector", 
+    "roleAdmin": "⚙️ Admin",
+    "emailAddress": "Email Address",
+    "password": "Password",
+    "signIn": "Sign In",
+    "newHereRegister": "New here? Register",
+    "fillAllFields": "Please fill in all fields",
+    "invalidCredentials": "Invalid credentials for selected role",
+    "language": "Language"
   },
   "wasteGuide": {
     "reduce": {
