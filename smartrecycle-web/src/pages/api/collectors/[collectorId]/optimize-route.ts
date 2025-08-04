@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import prisma from '../../../../lib/prisma';
 
 // This function makes a real call to the Google Maps Directions API
 async function getOptimizedRoute(

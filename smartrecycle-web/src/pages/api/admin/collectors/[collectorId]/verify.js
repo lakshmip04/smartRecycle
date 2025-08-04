@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../../../lib/prisma'; // The number of '../' might change based on the file's location
 
 export default async function handler(req, res) {
   const { collectorId } = req.query;

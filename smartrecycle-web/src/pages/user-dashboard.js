@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
 import dynamic from 'next/dynamic';
@@ -36,7 +36,9 @@ import {
   Person as PersonIcon,
   Upload as UploadIcon,
   Book as GuideIcon,
+  MonetizationOn as IncentiveIcon, // Added for incentive display
 } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadFull } from 'tsparticles';
 import Confetti from 'react-confetti';
@@ -111,6 +113,7 @@ export default function UserDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
+  const [incentives, setIncentives] = useState([]); // ADDED: State to store incentive prices
 
   const userNavItems = [
     { name: t('sidebar.dashboard'), path: '/user-dashboard', icon: <EcoIcon /> },
@@ -130,21 +133,44 @@ export default function UserDashboard() {
     const parsedUser = JSON.parse(storedUserData);
     setUser(parsedUser);
 
-    const fetchAlerts = async (userId) => {
+    const fetchInitialData = async (userId) => {
       try {
-        const response = await fetch(`/api/users/${userId}/alerts`);
-        if (!response.ok) throw new Error('Failed to fetch alerts.');
-        const data = await response.json();
-        setWasteAlerts(data.alerts);
+        // Fetch both alerts and incentives at the same time
+        const [alertsRes, incentivesRes] = await Promise.all([
+          fetch(`/api/users/${userId}/alerts`),
+          fetch('/api/admin/incentives') // Fetch incentive prices
+        ]);
+
+        if (!alertsRes.ok) throw new Error('Failed to fetch alerts.');
+        if (!incentivesRes.ok) throw new Error('Failed to fetch incentives.');
+
+        const alertsData = await alertsRes.json();
+        const incentivesData = await incentivesRes.json();
+        
+        setWasteAlerts(alertsData.alerts);
+        setIncentives(incentivesData);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-    if (parsedUser?.id) fetchAlerts(parsedUser.id);
+
+    if (parsedUser?.id) fetchInitialData(parsedUser.id);
     else setLoading(false);
   }, [router]);
+
+  // ADDED: Calculate estimated incentive in real-time
+  const estimatedIncentive = useMemo(() => {
+    if (!newAlertData.wasteType || !newAlertData.weightEstimate) {
+      return '0.00';
+    }
+    const incentiveRate = incentives.find(i => i.wasteType === newAlertData.wasteType);
+    if (!incentiveRate) {
+      return '0.00';
+    }
+    return (parseFloat(newAlertData.weightEstimate) * incentiveRate.pricePerKg).toFixed(2);
+  }, [newAlertData.wasteType, newAlertData.weightEstimate, incentives]);
 
   // Set window dimensions for confetti
   useEffect(() => {
@@ -174,20 +200,18 @@ export default function UserDashboard() {
       setChatbotInitialMessage(decodeURIComponent(message));
     }
     
-    // Clean the URL after processing the parameters (only if we have tab or message)
     if (tab || message) {
-      // Use setTimeout to avoid modifying router during render
       const timer = setTimeout(() => {
         const cleanQuery = Object.keys(otherQuery).length > 0 ? otherQuery : {};
         router.replace({
           pathname: router.pathname,
           query: cleanQuery
         }, undefined, { shallow: true });
-      }, 500); // Give a bit more time for state to settle
+      }, 500);
       
       return () => clearTimeout(timer);
     }
-  }, [router.query]);
+  }, [router.query, router]);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files[0]) {
@@ -236,7 +260,6 @@ export default function UserDashboard() {
       }
     }
 
-    // Use location coordinates from classification if available, otherwise use placeholder
     const coords = {
       lat: newAlertData.pickupLatitude || 12.9716,
       lng: newAlertData.pickupLongitude || 77.5946
@@ -272,7 +295,6 @@ export default function UserDashboard() {
         });
         setImageFile(null);
         
-        // Trigger celebration effects
         setShowConfetti(true);
         toast.success('🎉 Thanks for being part of building a cleaner city! Your waste alert has been posted successfully.', {
           duration: 6000,
@@ -284,10 +306,9 @@ export default function UserDashboard() {
             fontSize: '16px',
             fontWeight: '500',
           },
-          icon: '🌱',
+          icon: '�',
         });
         
-        // Stop confetti after 5 seconds
         setTimeout(() => {
           setShowConfetti(false);
         }, 5000);
@@ -302,7 +323,6 @@ export default function UserDashboard() {
   };
 
   const handleClassificationComplete = (classificationData) => {
-    // Set the image file from the classification
     if (classificationData.image) {
       setImageFile(classificationData.image);
     }
@@ -339,7 +359,6 @@ export default function UserDashboard() {
     
     console.log("🎯 Using mapped waste type:", mappedWasteType);
     
-    // Set the location data if available
     if (classificationData.location && classificationData.location.address) {
       setNewAlertData(prev => ({
         ...prev,
@@ -360,23 +379,17 @@ export default function UserDashboard() {
   };
 
   const handlePostAlertFromChat = (wasteDescription) => {
-    // 1. Pre-fill the alert form with info from the chat
     setNewAlertData(prev => ({
       ...prev,
       wasteType: 'GENERAL', // Set a default, user can refine
       description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
-      // Reset other fields
       weightEstimate: '',
       pickupAddress: '',
       pickupTimeSlot: '',
       pickupLatitude: null,
       pickupLongitude: null,
     }));
-
-    // 2. Switch to the AI Classifier tab
     setActiveTab(1);
-    
-    // 3. Open the dialog to continue creating the alert
     setOpenDialog(true);
   };
 
@@ -390,7 +403,6 @@ export default function UserDashboard() {
 
   return (
     <Box sx={{ minHeight: '100vh', overflowX: 'hidden', position: 'relative', background: '#e9f5ec' }} className="transition-all duration-300 ease-in-out">
-      {/* Confetti Effect */}
       {showConfetti && (
         <Confetti
           width={windowDimensions.width}
@@ -401,10 +413,7 @@ export default function UserDashboard() {
           style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999 }}
         />
       )}
-      
-      {/* Toast Notifications */}
       <Toaster position="top-center" />
-      
       <Particles
         id="tsparticles"
         init={particlesInit}
@@ -439,10 +448,10 @@ export default function UserDashboard() {
           </Box>
 
           <Grid container spacing={isMobile ? 1 : 3} sx={{ mb: 4 }} className="animate-fade-in">
-            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.totalPosts')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.pending')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.inProgress')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
-            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.completed')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }}><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.totalPosts')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }}><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.pending')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }}><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.inProgress')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }}><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.completed')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
           </Grid>
 
           <StyledPaper>
@@ -474,9 +483,7 @@ export default function UserDashboard() {
             <TabPanel value={activeTab} index={1}><WasteClassifier onClassificationComplete={handleClassificationComplete} /></TabPanel>
             <TabPanel value={activeTab} index={2}><WasteCollectorMapWithNoSSR /></TabPanel>
             <TabPanel value={activeTab} index={3}><RecycleRecommendationChatbot onPostAlertFromChat={handlePostAlertFromChat} initialMessage={chatbotInitialMessage} /></TabPanel>
-            <TabPanel value={activeTab} index={4}>
-              <WasteGuide />
-            </TabPanel>
+            <TabPanel value={activeTab} index={4}><WasteGuide /></TabPanel>
           </StyledPaper>
 
           <Fab
@@ -506,6 +513,18 @@ export default function UserDashboard() {
                 <Grid item xs={12}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.preferredPickupTime')}</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label={t('userDashboard.postAlert.preferredPickupTime')}><MenuItem value="9am-12pm">{t('userDashboard.postAlert.timeSlots.morning')}</MenuItem><MenuItem value="12pm-3pm">{t('userDashboard.postAlert.timeSlots.afternoon')}</MenuItem><MenuItem value="3pm-6pm">{t('userDashboard.postAlert.timeSlots.evening')}</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.description')} multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
                 <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? t('userDashboard.postAlert.selectedImage', { filename: imageFile.name }) : t('userDashboard.postAlert.uploadImage')}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
+                {/* ADDED: Display for Estimated Incentive */}
+                <Grid item xs={12}>
+                  <Paper variant="outlined" sx={{ p: 2, mt: 1, textAlign: 'center', borderColor: 'primary.main' }}>
+                      <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <IncentiveIcon color="primary" />
+                          {t('userDashboard.postAlert.estimatedIncentive')}: 
+                          <Typography component="span" variant="h6" color="primary.main" fontWeight="bold">
+                              ₹{estimatedIncentive}
+                          </Typography>
+                      </Typography>
+                  </Paper>
+                </Grid>
               </Grid>
             </DialogContent>
             <DialogActions>
