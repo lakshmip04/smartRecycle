@@ -95,7 +95,7 @@ export default function UserDashboard() {
   const [wasteAlerts, setWasteAlerts] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newAlertData, setNewAlertData] = useState({
-    wasteType: 'GENERAL',
+    wasteType: 'PLASTIC',
     description: '',
     weightEstimate: '',
     pickupAddress: '',
@@ -203,7 +203,7 @@ export default function UserDashboard() {
         setWasteAlerts([result.alert, ...wasteAlerts]);
         setOpenDialog(false);
         setNewAlertData({
-          wasteType: 'GENERAL',
+          wasteType: 'PLASTIC',
           description: '',
           weightEstimate: '',
           pickupAddress: '',
@@ -228,6 +228,12 @@ export default function UserDashboard() {
       setImageFile(classificationData.image);
     }
     
+    // Use the mapped system waste type if available, otherwise fallback to biodegradability logic
+    const mappedWasteType = classificationData.classification.system_waste_type || 
+      (classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE');
+    
+    console.log("🎯 Using mapped waste type:", mappedWasteType);
+    
     // Set the location data if available
     if (classificationData.location && classificationData.location.address) {
       setNewAlertData(prev => ({
@@ -236,13 +242,13 @@ export default function UserDashboard() {
         pickupLatitude: classificationData.location.latitude,
         pickupLongitude: classificationData.location.longitude,
         description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
-        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+        wasteType: mappedWasteType
       }));
     } else {
       setNewAlertData(prev => ({
         ...prev,
         description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
-        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+        wasteType: mappedWasteType
       }));
     }
     setOpenDialog(true);
@@ -339,7 +345,7 @@ export default function UserDashboard() {
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
                 {/* MODIFIED: The Grid items now stack on mobile and go side-by-side on larger screens */}
-                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Waste Type</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type"><MenuItem value="GENERAL">General</MenuItem><MenuItem value="RECYCLABLE">Recyclable</MenuItem><MenuItem value="E_WASTE">E-Waste</MenuItem><MenuItem value="ORGANIC">Organic</MenuItem><MenuItem value="HAZARDOUS">Hazardous</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Waste Type</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type"><MenuItem value="PLASTIC">Plastic</MenuItem><MenuItem value="PAPER">Paper</MenuItem><MenuItem value="METAL">Metal</MenuItem><MenuItem value="GLASS">Glass</MenuItem><MenuItem value="E_WASTE">E-Waste</MenuItem><MenuItem value="ORGANIC">Organic</MenuItem><MenuItem value="MEDICAL">Medical</MenuItem><MenuItem value="HAZARDOUS">Hazardous</MenuItem><MenuItem value="TEXTILE">Textile</MenuItem><MenuItem value="BULBS">Bulbs & Lighting</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">Construction Debris</MenuItem><MenuItem value="SANITARY">Sanitary</MenuItem><MenuItem value="OTHER">Other</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12} sm={6}><TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
                 <Grid item xs={12}><TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
                 <Grid item xs={12}><FormControl fullWidth><InputLabel>Preferred Pickup Time Slot</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label="Preferred Pickup Time Slot"><MenuItem value="9am-12pm">Morning (9 AM - 12 PM)</MenuItem><MenuItem value="12pm-3pm">Afternoon (12 PM - 3 PM)</MenuItem><MenuItem value="3pm-6pm">Evening (3 PM - 6 PM)</MenuItem></Select></FormControl></Grid>

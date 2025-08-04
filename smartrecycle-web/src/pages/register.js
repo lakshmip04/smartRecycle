@@ -266,7 +266,7 @@ export default function RegisterPage() {
     return acceptedWasteTypes.includes(wasteTypeKey);
   };
   const mapToEnumWasteTypes = (hierarchicalTypes) => {
-    const mapping = { 'organicWaste.kitchenWaste': 'ORGANIC', 'organicWaste.gardenWaste': 'ORGANIC', 'dryWaste.plastic': 'PLASTIC', 'dryWaste.paper': 'PAPER', 'dryWaste.metal': 'METAL', 'dryWaste.glass': 'GLASS', 'dryWaste.otherDryWaste': 'OTHER', 'dryWaste.eWaste': 'E_WASTE', 'dryWaste.bulbsLighting': 'BULBS', 'dryWaste.constructionDebris': 'CONSTRUCTION_DEBRIS', 'sanitaryWaste.general': 'SANITARY', 'sanitaryWaste.sharps': 'MEDICAL' };
+    const mapping = { 'organicWaste.kitchenWaste': 'ORGANIC', 'organicWaste.gardenWaste': 'ORGANIC', 'dryWaste.plastic': 'PLASTIC', 'dryWaste.paper': 'PAPER', 'dryWaste.metal': 'METAL', 'dryWaste.glass': 'GLASS', 'dryWaste.otherDryWaste': 'OTHER', 'dryWaste.eWaste': 'E_WASTE', 'dryWaste.bulbsLighting': 'BULBS_LIGHTING', 'dryWaste.constructionDebris': 'CONSTRUCTION_DEBRIS', 'sanitaryWaste.general': 'SANITARY_WASTE', 'sanitaryWaste.sharps': 'MEDICAL' };
     const enumTypes = hierarchicalTypes.map(type => mapping[type]).filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
     return enumTypes;
   };

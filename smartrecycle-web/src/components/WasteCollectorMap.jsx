@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import dynamic from 'next/dynamic';
 import {
   Box, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem, TextField, Button, Grid, Alert, Paper, CircularProgress
@@ -45,7 +46,8 @@ const MapController = ({ center, zoom }) => {
 };
 
 export default function WasteCollectorMap() {
-  const [selectedWasteType, setSelectedWasteType] = useState('E_WASTE');
+  const { t } = useTranslation();
+  const [selectedWasteType, setSelectedWasteType] = useState('PLASTIC');
   const [userLocation, setUserLocation] = useState(null);
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -78,7 +80,7 @@ export default function WasteCollectorMap() {
     );
 
     if (availableCollectors.length === 0) {
-      setError(`No collectors found for ${selectedWasteType.replace('_', ' ')} waste`);
+      setError(t('findCollectors.noCollectorsFound', { wasteType: selectedWasteType.replace('_', ' ') }));
       setNearestCollector(null);
       return;
     }
@@ -180,11 +182,11 @@ export default function WasteCollectorMap() {
         setUserLocation(coords);
         findNearestCollector(coords);
       } else {
-        setError('Address not found. Please try a different address.');
+        setError(t('findCollectors.addressNotFound'));
       }
     } catch (err) {
       console.error('Geocoding error:', err);
-      setError('Failed to find address. Please try again.');
+      setError(t('findCollectors.geocodingFailed'));
     } finally {
       setLoading(false);
     }
@@ -196,21 +198,29 @@ export default function WasteCollectorMap() {
     <Box>
       <Card elevation={3} sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>Find Nearest Waste Collector</Typography>
+          <Typography variant="h6" gutterBottom>{t('findCollectors.title')}</Typography>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} md={4}>
               <FormControl fullWidth>
-                <InputLabel>Waste Type</InputLabel>
+                <InputLabel>{t('findCollectors.wasteType')}</InputLabel>
                 <Select
                   value={selectedWasteType}
                   onChange={(e) => setSelectedWasteType(e.target.value)}
-                  label="Waste Type"
+                  label={t('findCollectors.wasteType')}
                 >
-                  <MenuItem value="GENERAL">General</MenuItem>
-                  <MenuItem value="RECYCLABLE">Recyclable</MenuItem>
-                  <MenuItem value="E_WASTE">E-Waste</MenuItem>
-                  <MenuItem value="ORGANIC">Organic</MenuItem>
-                  <MenuItem value="HAZARDOUS">Hazardous</MenuItem>
+                  <MenuItem value="PLASTIC">{t('findCollectors.wasteTypes.plastic')}</MenuItem>
+                  <MenuItem value="PAPER">{t('findCollectors.wasteTypes.paper')}</MenuItem>
+                  <MenuItem value="METAL">{t('findCollectors.wasteTypes.metal')}</MenuItem>
+                  <MenuItem value="GLASS">{t('findCollectors.wasteTypes.glass')}</MenuItem>
+                  <MenuItem value="E_WASTE">{t('findCollectors.wasteTypes.eWaste')}</MenuItem>
+                  <MenuItem value="ORGANIC">{t('findCollectors.wasteTypes.organic')}</MenuItem>
+                  <MenuItem value="MEDICAL">{t('findCollectors.wasteTypes.medical')}</MenuItem>
+                  <MenuItem value="HAZARDOUS">{t('findCollectors.wasteTypes.hazardous')}</MenuItem>
+                  <MenuItem value="TEXTILE">{t('findCollectors.wasteTypes.textile')}</MenuItem>
+                  <MenuItem value="BULBS">{t('findCollectors.wasteTypes.bulbs')}</MenuItem>
+                  <MenuItem value="CONSTRUCTION_DEBRIS">{t('findCollectors.wasteTypes.constructionDebris')}</MenuItem>
+                  <MenuItem value="SANITARY">{t('findCollectors.wasteTypes.sanitary')}</MenuItem>
+                  <MenuItem value="OTHER">{t('findCollectors.wasteTypes.other')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -219,8 +229,8 @@ export default function WasteCollectorMap() {
                 value={address}
                 onChange={setAddress}
                 onSelect={handleLocationSelect}
-                label="Enter Your Address"
-                placeholder="e.g. MG Road, Bangalore"
+                label={t('findCollectors.enterAddress')}
+                placeholder={t('findCollectors.addressPlaceholder')}
               />
             </Grid>
             <Grid item xs={12} md={2}>
@@ -232,22 +242,22 @@ export default function WasteCollectorMap() {
                 startIcon={<MyLocation />} 
                 sx={{ height: '56px' }}
               >
-                GPS
+                {t('findCollectors.gps')}
               </Button>
             </Grid>
             <Grid item xs={12} md={1}>
               <Button fullWidth variant="contained" onClick={geocodeAddress} disabled={loading} startIcon={<Search />} sx={{ height: '56px' }}>
-                Find
+                {t('findCollectors.find')}
               </Button>
             </Grid>
           </Grid>
           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
           {nearestCollector && (
             <Paper elevation={2} sx={{ mt: 2, p: 2, bgcolor: 'success.light' }}>
-              <Typography variant="h6">Nearest Collector Found!</Typography>
-              <Typography><strong>Name:</strong> {nearestCollector.collectorProfile.name}</Typography>
-              <Typography><strong>Distance:</strong> {nearestCollector.distance} km</Typography>
-              <Typography><strong>Contact:</strong> {nearestCollector.phone}</Typography>
+              <Typography variant="h6">{t('findCollectors.nearestCollectorFound')}</Typography>
+              <Typography><strong>{t('findCollectors.name')}</strong> {nearestCollector.collectorProfile.name}</Typography>
+              <Typography><strong>{t('findCollectors.distance')}</strong> {nearestCollector.distance} km</Typography>
+              <Typography><strong>{t('findCollectors.contact')}</strong> {nearestCollector.phone}</Typography>
             </Paper>
           )}
         </CardContent>
@@ -259,12 +269,12 @@ export default function WasteCollectorMap() {
             <MapContainer center={mapCenter} zoom={10} style={{ height: '100%', width: '100%' }} ref={mapRef}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <MapController center={mapCenter} zoom={userLocation ? 12 : 10} />
-              {userLocation && <Marker position={userLocation} icon={userIcon}><Popup>Your Location</Popup></Marker>}
+              {userLocation && <Marker position={userLocation} icon={userIcon}><Popup>{t('findCollectors.yourLocation')}</Popup></Marker>}
               {collectors.map((collector) => (
                 <Marker key={collector.id} position={[collector.collectorProfile.latitude, collector.collectorProfile.longitude]} icon={collectorIcon}>
                   <Popup>
                     <strong>{collector.collectorProfile.name}</strong><br />
-                    Accepts: {collector.collectorProfile.acceptedWasteTypes.join(', ')}
+                    {t('findCollectors.accepts')}: {collector.collectorProfile.acceptedWasteTypes.join(', ')}
                   </Popup>
                 </Marker>
               ))}

@@ -88,7 +88,7 @@ export default function UserDashboard() {
   const router = useRouter();
   const { t } = useTranslation();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('xs'));
 
 
 
@@ -99,7 +99,7 @@ export default function UserDashboard() {
   const [wasteAlerts, setWasteAlerts] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newAlertData, setNewAlertData] = useState({
-    wasteType: 'GENERAL',
+    wasteType: 'PLASTIC',
     description: '',
     weightEstimate: '',
     pickupAddress: '',
@@ -252,7 +252,7 @@ export default function UserDashboard() {
         setWasteAlerts([result.alert, ...wasteAlerts]);
         setOpenDialog(false);
         setNewAlertData({
-          wasteType: 'GENERAL',
+          wasteType: 'PLASTIC',
           description: '',
           weightEstimate: '',
           pickupAddress: '',
@@ -297,6 +297,12 @@ export default function UserDashboard() {
       setImageFile(classificationData.image);
     }
     
+    // Use the mapped system waste type if available, otherwise fallback to biodegradability logic
+    const mappedWasteType = classificationData.classification.system_waste_type || 
+      (classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE');
+    
+    console.log("🎯 Using mapped waste type:", mappedWasteType);
+    
     // Set the location data if available
     if (classificationData.location && classificationData.location.address) {
       setNewAlertData(prev => ({
@@ -305,13 +311,13 @@ export default function UserDashboard() {
         pickupLatitude: classificationData.location.latitude,
         pickupLongitude: classificationData.location.longitude,
         description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
-        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+        wasteType: mappedWasteType
       }));
     } else {
       setNewAlertData(prev => ({
         ...prev,
         description: `AI classified: ${classificationData.classification.waste_type}. ${classificationData.classification.recycling_instructions || ''}`,
-        wasteType: classificationData.classification.biodegradability === 'biodegradable' ? 'ORGANIC' : 'RECYCLABLE'
+        wasteType: mappedWasteType
       }));
     }
     setOpenDialog(true);
@@ -321,7 +327,7 @@ export default function UserDashboard() {
     // 1. Pre-fill the alert form with info from the chat
     setNewAlertData(prev => ({
       ...prev,
-      wasteType: 'GENERAL', // Set a default, user can refine
+      wasteType: 'PLASTIC', // Set a default, user can refine
       description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
       // Reset other fields
       weightEstimate: '',
@@ -389,18 +395,18 @@ export default function UserDashboard() {
               gutterBottom
               sx={{ color: '#4CAF50', fontWeight: 'bold' }}
             >
-              Welcome back, {user?.profile?.name || 'User'}! 👋
+              {t('userDashboard.welcomeMessage', { name: user?.profile?.name || 'User' })}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage your waste alerts and explore eco-friendly options.
+              {t('userDashboard.welcomeDescription')}
             </Typography>
           </Box>
 
-          <Grid container spacing={isMobile ? 2 : 3} sx={{ mb: 4 }} className="animate-fade-in">
-            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">Total Posts</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
-            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">Pending</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
-            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">In Progress</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
-            <Grid item xs={6} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">Completed</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
+          <Grid container spacing={isMobile ? 1 : 3} sx={{ mb: 4 }} className="animate-fade-in">
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.totalPosts')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105 "><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.pending')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'PENDING').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.inProgress')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'CLAIMED' || a.status === 'IN_TRANSIT').length}</Typography></StyledPaper></Grid>
+            <Grid item xs={12} sm={6} md={3}><StyledPaper sx={{ textAlign: 'center' }} className="hover:shadow-lg transform hover:scale-105"><Typography color="text.secondary" variant="body2">{t('userDashboard.stats.completed')}</Typography><Typography variant="h4" sx={{ color: '#2E7D32', fontWeight: 600 }}>{wasteAlerts.filter(a => a.status === 'COMPLETED').length}</Typography></StyledPaper></Grid>
           </Grid>
 
           <StyledPaper>
@@ -447,20 +453,20 @@ export default function UserDashboard() {
           </Fab>
 
           <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ color: '#2E7D32' }}>Post New Waste Alert</DialogTitle>
+            <DialogTitle sx={{ color: '#2E7D32' }}>{t('userDashboard.postAlert.title')}</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Waste Type</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label="Waste Type"><MenuItem value="GENERAL">General</MenuItem><MenuItem value="RECYCLABLE">Recyclable</MenuItem><MenuItem value="E_WASTE">E-Waste</MenuItem><MenuItem value="ORGANIC">Organic</MenuItem><MenuItem value="HAZARDOUS">Hazardous</MenuItem></Select></FormControl></Grid>
-                <Grid item xs={12} sm={6}><TextField fullWidth label="Estimated Weight (kg)" type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
-                <Grid item xs={12}><TextField fullWidth label="Pickup Address" value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
-                <Grid item xs={12}><FormControl fullWidth><InputLabel>Preferred Pickup Time Slot</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label="Preferred Pickup Time Slot"><MenuItem value="9am-12pm">Morning (9 AM - 12 PM)</MenuItem><MenuItem value="12pm-3pm">Afternoon (12 PM - 3 PM)</MenuItem><MenuItem value="3pm-6pm">Evening (3 PM - 6 PM)</MenuItem></Select></FormControl></Grid>
-                <Grid item xs={12}><TextField fullWidth label="Description (optional)" multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
-                <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? `Selected: ${imageFile.name}` : 'Upload Image (Optional)'}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
+                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="TEXTILE">{t('userDashboard.postAlert.wasteTypes.textile')}</MenuItem><MenuItem value="BULBS">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="OTHER">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12} sm={6}><TextField fullWidth label={t('userDashboard.postAlert.estimatedWeight')} type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
+                <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.pickupAddress')} value={newAlertData.pickupAddress} onChange={(e) => setNewAlertData({ ...newAlertData, pickupAddress: e.target.value })} /></Grid>
+                <Grid item xs={12}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.preferredPickupTime')}</InputLabel><Select value={newAlertData.pickupTimeSlot} onChange={(e) => setNewAlertData({ ...newAlertData, pickupTimeSlot: e.target.value })} label={t('userDashboard.postAlert.preferredPickupTime')}><MenuItem value="9am-12pm">{t('userDashboard.postAlert.timeSlots.morning')}</MenuItem><MenuItem value="12pm-3pm">{t('userDashboard.postAlert.timeSlots.afternoon')}</MenuItem><MenuItem value="3pm-6pm">{t('userDashboard.postAlert.timeSlots.evening')}</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12}><TextField fullWidth label={t('userDashboard.postAlert.description')} multiline rows={3} value={newAlertData.description} onChange={(e) => setNewAlertData({ ...newAlertData, description: e.target.value })} /></Grid>
+                <Grid item xs={12}><Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>{imageFile ? t('userDashboard.postAlert.selectedImage', { filename: imageFile.name }) : t('userDashboard.postAlert.uploadImage')}<input type="file" hidden onChange={handleFileChange} accept="image/*" /></Button></Grid>
               </Grid>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-              <Button onClick={handleCreateAlert} variant="contained" disabled={loading} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{loading ? <CircularProgress size={24} /> : 'Create Alert'}</Button>
+              <Button onClick={() => setOpenDialog(false)}>{t('userDashboard.postAlert.cancel')}</Button>
+              <Button onClick={handleCreateAlert} variant="contained" disabled={loading} sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#2E7D32' } }}>{loading ? <CircularProgress size={24} /> : t('userDashboard.postAlert.createAlert')}</Button>
             </DialogActions>
           </Dialog>
         </div>

@@ -60,7 +60,16 @@
     "viewRawJson": "View Raw JSON",
     "technicalClassificationData": "Technical Classification Data",
     "rawApiResponse": "Raw API Response:",
-    "close": "Close"
+    "close": "Close",
+    "pickupLocation": "Pickup Location",
+    "pickupLocationDescription": "Select the location where this waste item is located for pickup",
+    "pickupAddress": "Pickup Address",
+    "pickupAddressPlaceholder": "Enter pickup address...",
+    "enhancedClassificationDetails": "Enhanced Classification Details",
+    "aiConfidenceLevel": "AI Confidence Level",
+    "highConfidenceClassification": "High confidence classification",
+    "mediumConfidenceClassification": "Medium confidence classification",
+    "lowConfidenceVerification": "Low confidence - manual verification recommended"
   },
   "quickSuggestions": {
     "plasticBottles": "Plastic bottles",
@@ -132,7 +141,47 @@
       "chatbot": "3R Chatbot",
       "wasteGuide": "Waste Guide"
     },
-    "noAlertsMessage": "No waste alerts posted yet. Click the '+' button to create one!"
+    "noAlertsMessage": "No waste alerts posted yet. Click the '+' button to create one!",
+    "welcomeMessage": "Welcome back, {{name}}! 👋",
+    "welcomeDescription": "Manage your waste alerts and explore eco-friendly options.",
+    "stats": {
+      "totalPosts": "Total Posts",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "postAlert": {
+      "title": "Post New Waste Alert",
+      "wasteType": "Waste Type",
+      "estimatedWeight": "Estimated Weight (kg)",
+      "pickupAddress": "Pickup Address",
+      "preferredPickupTime": "Preferred Pickup Time Slot",
+      "description": "Description (optional)",
+      "uploadImage": "Upload Image (Optional)",
+      "selectedImage": "Selected: {{filename}}",
+      "createAlert": "Create Alert",
+      "cancel": "Cancel",
+      "timeSlots": {
+        "morning": "Morning (9 AM - 12 PM)",
+        "afternoon": "Afternoon (12 PM - 3 PM)",
+        "evening": "Evening (3 PM - 6 PM)"
+      },
+      "wasteTypes": {
+        "plastic": "Plastic",
+        "paper": "Paper",
+        "metal": "Metal",
+        "glass": "Glass",
+        "eWaste": "E-Waste",
+        "organic": "Organic",
+        "medical": "Medical",
+        "hazardous": "Hazardous",
+        "textile": "Textile",
+        "bulbs": "Bulbs & Lighting",
+        "constructionDebris": "Construction Debris",
+        "sanitary": "Sanitary",
+        "other": "Other"
+      }
+    }
   },
   "auth": {
     "appName": "EcoDrop",
@@ -306,6 +355,38 @@
       "title": "No results found for \"{{searchTerm}}\"",
       "description": "Try searching with different keywords or ask our AI chatbot for help with your specific waste item.",
       "button": "Ask AI Chatbot"
+    }
+  },
+  "findCollectors": {
+    "title": "Find Nearest Waste Collector",
+    "wasteType": "Waste Type",
+    "enterAddress": "Enter Your Address",
+    "addressPlaceholder": "e.g. MG Road, Bangalore",
+    "gps": "GPS",
+    "find": "Find",
+    "nearestCollectorFound": "Nearest Collector Found!",
+    "name": "Name:",
+    "distance": "Distance:",
+    "contact": "Contact:",
+    "yourLocation": "Your Location",
+    "accepts": "Accepts:",
+    "noCollectorsFound": "No collectors found for {{wasteType}} waste",
+    "addressNotFound": "Address not found. Please try a different address.",
+    "geocodingFailed": "Failed to find address. Please try again.",
+    "wasteTypes": {
+      "plastic": "Plastic",
+      "paper": "Paper",
+      "metal": "Metal",
+      "glass": "Glass",
+      "eWaste": "E-Waste",
+      "organic": "Organic",
+      "medical": "Medical",
+      "hazardous": "Hazardous",
+      "textile": "Textile",
+      "bulbs": "Bulbs & Lighting",
+      "constructionDebris": "Construction Debris",
+      "sanitary": "Sanitary",
+      "other": "Other"
     }
   }
 }

@@ -296,7 +296,8 @@ const AvailableMaterialsScreen = () => {
         biodegradable: aiClassificationResult.biodegradability === 'biodegradable',
         confidence: aiClassificationResult.confidence,
         recycling_instructions: aiClassificationResult.recycling_instructions,
-        environmental_impact: aiClassificationResult.environmental_impact
+        environmental_impact: aiClassificationResult.environmental_impact,
+        system_waste_type: aiClassificationResult.system_waste_type
       };
 
       // Use location data from classification if available, otherwise use defaults
@@ -306,12 +307,15 @@ const AvailableMaterialsScreen = () => {
         : [12.9716, 77.5946];
       const address = locationData.address || 'Location to be provided by user';
 
+      // Use system waste type if available, otherwise use the original waste type
+      const displayWasteType = aiClassificationResult.system_waste_type || aiClassificationResult.waste_type;
+      
       const newMaterial = {
         id: materials.length + 1,
         title: `AI Classified: ${aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1)}`,
-        type: aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1),
+        type: displayWasteType.charAt(0).toUpperCase() + displayWasteType.slice(1),
         description: `AI-classified material. ${aiClassificationResult.recycling_instructions || 'No specific instructions provided.'}`,
-        wasteType: aiClassificationResult.waste_type.charAt(0).toUpperCase() + aiClassificationResult.waste_type.slice(1),
+        wasteType: displayWasteType.charAt(0).toUpperCase() + displayWasteType.slice(1),
         weight: '0 kg', // User should input this when posting
         location: coordinates,
         address: address,
