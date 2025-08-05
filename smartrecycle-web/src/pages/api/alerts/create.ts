@@ -27,7 +27,7 @@ NOTE: For this test, you first need to register/login a HOUSEHOLD user
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, WasteType } from '@prisma/client';
 
-import prisma from '../../../lib/prisma';
+const prisma = new PrismaClient();
 
 export default async function handler(
   req: NextApiRequest,

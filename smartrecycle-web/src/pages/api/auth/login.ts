@@ -27,7 +27,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, HouseholdProfile, CollectorProfile } from '@prisma/client';;
 import bcrypt from 'bcryptjs';
 
-import prisma from '../../../lib/prisma';
+// Initialize Prisma Client
+const prisma = new PrismaClient();
 
 export default async function handler(
   req: NextApiRequest,

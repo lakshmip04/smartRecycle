@@ -31,7 +31,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, AlertStatus } from '@prisma/client';
 
-import prisma from '../../../../lib/prisma';
+const prisma = new PrismaClient();
 
 export default async function handler(
   req: NextApiRequest,
