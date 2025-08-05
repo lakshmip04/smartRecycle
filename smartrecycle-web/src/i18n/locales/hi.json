@@ -169,6 +169,21 @@
       "inProgress": "प्रगति में",
       "completed": "पूर्ण"
     },
+    "alertCard": {
+      "collector": "संग्रहकर्ता",
+      "location": "स्थान",
+      "notAssigned": "नियुक्त नहीं",
+      "report": "रिपोर्ट",
+      "reportProblem": "समस्या रिपोर्ट करें",
+      "reportDescription": "कृपया इस संग्रह सूचना के साथ आपको जिस समस्या का सामना करना पड़ रहा है उसका वर्णन करें।",
+      "problemDescription": "समस्या का विवरण",
+      "submitReport": "रिपोर्ट सबमिट करें",
+      "cancel": "रद्द करें",
+      "reportSuccess": "समस्या सफलतापूर्वक रिपोर्ट की गई!",
+      "reportError": "रिपोर्ट सबमिट करने में विफल।",
+      "loginRequired": "समस्या रिपोर्ट करने के लिए आपको लॉगिन होना चाहिए।",
+      "descriptionRequired": "कृपया समस्या का विवरण प्रदान करें।"
+    },
     "postAlert": {
       "title": "नई कचरा सूचना पोस्ट करें",
       "wasteType": "कचरे का प्रकार",

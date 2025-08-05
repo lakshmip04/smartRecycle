@@ -189,6 +189,11 @@ export default function UserDashboard() {
   // State for chatbot initial message
   const [chatbotInitialMessage, setChatbotInitialMessage] = useState('');
 
+  // Debug: Monitor newAlertData changes
+  useEffect(() => {
+    console.log('🔍 newAlertData changed:', newAlertData);
+  }, [newAlertData]);
+
   // Handle tab and message query parameters
   useEffect(() => {
     const { tab, message, ...otherQuery } = router.query;
@@ -378,19 +383,64 @@ export default function UserDashboard() {
     setOpenDialog(true);
   };
 
-  const handlePostAlertFromChat = (wasteDescription) => {
-    setNewAlertData(prev => ({
-      ...prev,
-      wasteType: 'GENERAL', // Set a default, user can refine
-      description: `Alert for: ${wasteDescription}. Please use the AI classifier or provide details below.`,
+  const handlePostAlertFromChat = (wasteDescription, prismaEnum = 'GENERAL') => {
+    console.log('🎯 Chatbot alert creation:', { wasteDescription, prismaEnum });
+    console.log('🎯 Prisma enum type:', typeof prismaEnum);
+    console.log('🎯 Prisma enum value:', prismaEnum);
+    
+    // Map Prisma enum to waste type if it's a valid enum
+    const mapPrismaEnumToWasteType = (enumValue) => {
+      // Direct mapping since the enum values match exactly
+      const validEnumValues = [
+        'GENERAL',
+        'RECYCLABLE', 
+        'E_WASTE',
+        'ORGANIC',
+        'HAZARDOUS',
+        'CONSTRUCTION_DEBRIS',
+        'MEDICAL',
+        'PLASTIC',
+        'PAPER',
+        'METAL',
+        'GLASS',
+        'BULBS_LIGHTING',
+        'SANITARY_WASTE'
+      ];
+      
+      // Handle case-insensitive matching
+      const upperEnumValue = enumValue?.toUpperCase();
+      
+      // Check if the enum value is valid
+      if (validEnumValues.includes(upperEnumValue)) {
+        console.log('🔄 Using Prisma enum directly:', upperEnumValue);
+        return upperEnumValue;
+      }
+      
+      console.log('🔄 Invalid enum value:', enumValue, 'falling back to GENERAL');
+      return 'GENERAL';
+    };
+
+    const mappedWasteType = mapPrismaEnumToWasteType(prismaEnum);
+    console.log('✅ Final waste type for alert:', mappedWasteType);
+    console.log('✅ Setting newAlertData with waste type:', mappedWasteType);
+
+    const newData = {
+      wasteType: mappedWasteType,
+      description: `Alert for: ${wasteDescription}. AI categorized as: ${prismaEnum}. Please use the AI classifier or provide details below.`,
       weightEstimate: '',
       pickupAddress: '',
       pickupTimeSlot: '',
       pickupLatitude: null,
       pickupLongitude: null,
-    }));
+    };
+    console.log('✅ New alert data set:', newData);
+    setNewAlertData(newData);
     setActiveTab(1);
-    setOpenDialog(true);
+    
+    // Small delay to ensure state is updated before opening dialog
+    setTimeout(() => {
+      setOpenDialog(true);
+    }, 100);
   };
 
   if (loading && !user) {
@@ -495,11 +545,11 @@ export default function UserDashboard() {
             <AddIcon sx={{ color: 'white' }} />
           </Fab>
 
-          <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+          <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth key={`dialog-${newAlertData.wasteType}`}>
             <DialogTitle sx={{ color: '#2E7D32' }}>{t('userDashboard.postAlert.title')}</DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="BULBS_LIGHTING">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY_WASTE">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="GENERAL">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
+                <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t('userDashboard.postAlert.wasteType')}</InputLabel><Select key={`waste-type-${newAlertData.wasteType}`} value={newAlertData.wasteType} onChange={(e) => setNewAlertData({ ...newAlertData, wasteType: e.target.value })} label={t('userDashboard.postAlert.wasteType')}><MenuItem value="PLASTIC">{t('userDashboard.postAlert.wasteTypes.plastic')}</MenuItem><MenuItem value="PAPER">{t('userDashboard.postAlert.wasteTypes.paper')}</MenuItem><MenuItem value="METAL">{t('userDashboard.postAlert.wasteTypes.metal')}</MenuItem><MenuItem value="GLASS">{t('userDashboard.postAlert.wasteTypes.glass')}</MenuItem><MenuItem value="E_WASTE">{t('userDashboard.postAlert.wasteTypes.eWaste')}</MenuItem><MenuItem value="ORGANIC">{t('userDashboard.postAlert.wasteTypes.organic')}</MenuItem><MenuItem value="MEDICAL">{t('userDashboard.postAlert.wasteTypes.medical')}</MenuItem><MenuItem value="HAZARDOUS">{t('userDashboard.postAlert.wasteTypes.hazardous')}</MenuItem><MenuItem value="BULBS_LIGHTING">{t('userDashboard.postAlert.wasteTypes.bulbs')}</MenuItem><MenuItem value="CONSTRUCTION_DEBRIS">{t('userDashboard.postAlert.wasteTypes.constructionDebris')}</MenuItem><MenuItem value="SANITARY_WASTE">{t('userDashboard.postAlert.wasteTypes.sanitary')}</MenuItem><MenuItem value="GENERAL">{t('userDashboard.postAlert.wasteTypes.other')}</MenuItem></Select></FormControl></Grid>
                 <Grid item xs={12} sm={6}><TextField fullWidth label={t('userDashboard.postAlert.estimatedWeight')} type="number" value={newAlertData.weightEstimate} onChange={(e) => setNewAlertData({ ...newAlertData, weightEstimate: e.target.value })} /></Grid>
                 <Grid item xs={12}>
                   <LocationAutocomplete

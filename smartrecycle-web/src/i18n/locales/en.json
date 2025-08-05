@@ -169,6 +169,21 @@
       "inProgress": "In Progress",
       "completed": "Completed"
     },
+    "alertCard": {
+      "collector": "Collector",
+      "location": "Location",
+      "notAssigned": "Not assigned",
+      "report": "Report",
+      "reportProblem": "Report a Problem",
+      "reportDescription": "Please describe the issue you are facing with this collection alert.",
+      "problemDescription": "Problem Description",
+      "submitReport": "Submit Report",
+      "cancel": "Cancel",
+      "reportSuccess": "Problem reported successfully!",
+      "reportError": "Failed to submit report.",
+      "loginRequired": "You must be logged in to report a problem.",
+      "descriptionRequired": "Please provide a description of the problem."
+    },
     "postAlert": {
       "title": "Post New Waste Alert",
       "wasteType": "Waste Type",

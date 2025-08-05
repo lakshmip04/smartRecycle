@@ -23,6 +23,7 @@ let googleMapsScriptLoaded = false;
 
 const LocationAutocomplete = ({ 
   value, 
+  onChange,
   onSelect, 
   label = "Address", 
   placeholder = "Enter your address...",
@@ -133,6 +134,11 @@ const LocationAutocomplete = ({
   const handleInputChange = (event) => {
     const newValue = event.target.value;
     setInputValue(newValue);
+    
+    // Call the onChange prop if provided
+    if (onChange) {
+      onChange(newValue);
+    }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -148,6 +154,11 @@ const LocationAutocomplete = ({
     setInputValue(suggestion.description);
     setShowSuggestions(false);
     setSuggestions([]);
+    
+    // Call the onChange prop if provided
+    if (onChange) {
+      onChange(suggestion.description);
+    }
 
     if (!geocoderService.current) {
         console.error("LocationAutocomplete: Geocoder Service is not available to fetch coordinates.");
@@ -189,15 +200,27 @@ const LocationAutocomplete = ({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        geocoderService.current.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
-            setIsLoading(false);
-            if (status === 'OK' && results?.[0]) {
-                const address = results[0].formatted_address;
-                handleSuggestionSelect({ description: address, place_id: results[0].place_id });
-            } else {
-                setError('Could not find address for your location.');
-            }
-        });
+                 geocoderService.current.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+             setIsLoading(false);
+             if (status === 'OK' && results?.[0]) {
+                 const address = results[0].formatted_address;
+                 setInputValue(address);
+                 
+                 // Call the onChange prop if provided
+                 if (onChange) {
+                   onChange(address);
+                 }
+                 
+                 // Call onSelect with coordinates
+                 onSelect({
+                   description: address,
+                   latitude: latitude,
+                   longitude: longitude
+                 });
+             } else {
+                 setError('Could not find address for your location.');
+             }
+         });
       },
       () => {
         setIsLoading(false);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ import WasteTypeBadge from './WasteTypeBadge';
 
 
 export default function AlertCard({ alert }) {
+  const { t } = useTranslation();
   const [openReportDialog, setOpenReportDialog] = useState(false);
   const [reportDescription, setReportDescription] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -46,13 +48,13 @@ export default function AlertCard({ alert }) {
   const handleReportSubmit = async () => {
     const storedUserData = localStorage.getItem('user_data');
     if (!storedUserData) {
-        setSnackbar({ open: true, message: 'You must be logged in to report a problem.', severity: 'error' });
+        setSnackbar({ open: true, message: t('userDashboard.alertCard.loginRequired'), severity: 'error' });
         return;
     }
     const user = JSON.parse(storedUserData);
 
     if (!reportDescription.trim()) {
-        setSnackbar({ open: true, message: 'Please provide a description of the problem.', severity: 'warning' });
+        setSnackbar({ open: true, message: t('userDashboard.alertCard.descriptionRequired'), severity: 'warning' });
         return;
     }
 
@@ -69,17 +71,17 @@ export default function AlertCard({ alert }) {
         const result = await response.json();
         if (!response.ok) throw new Error(result.message);
 
-        setSnackbar({ open: true, message: 'Problem reported successfully!', severity: 'success' });
+        setSnackbar({ open: true, message: t('userDashboard.alertCard.reportSuccess'), severity: 'success' });
         setOpenReportDialog(false);
         setReportDescription('');
     } catch (err) {
-        setSnackbar({ open: true, message: err.message || 'Failed to submit report.', severity: 'error' });
+        setSnackbar({ open: true, message: err.message || t('userDashboard.alertCard.reportError'), severity: 'error' });
     }
   };
 
   const handleSnackbarClose = () => setSnackbar({ ...snackbar, open: false });
 
-  const collectorName = alert.claimedBy?.name || 'Not assigned';
+  const collectorName = alert.claimedBy?.name || t('userDashboard.alertCard.notAssigned');
 
   return (
     <>
@@ -108,7 +110,7 @@ export default function AlertCard({ alert }) {
                     startIcon={<ReportIcon />}
                     onClick={() => setOpenReportDialog(true)}
                 >
-                    Report
+                    {t('userDashboard.alertCard.report')}
                 </Button>
               </Box>
 
@@ -116,14 +118,14 @@ export default function AlertCard({ alert }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Person sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
-                    Collector: {collectorName}
+                    {t('userDashboard.alertCard.collector')}: {collectorName}
                   </Typography>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
-                    Location: {alert.pickupAddress}
+                    {t('userDashboard.alertCard.location')}: {alert.pickupAddress}
                   </Typography>
                 </Box>
 
@@ -150,16 +152,16 @@ export default function AlertCard({ alert }) {
 
       {/* ADDED: Report Problem Dialog */}
       <Dialog open={openReportDialog} onClose={() => setOpenReportDialog(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Report a Problem</DialogTitle>
+        <DialogTitle>{t('userDashboard.alertCard.reportProblem')}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Please describe the issue you are facing with this collection alert.
+            {t('userDashboard.alertCard.reportDescription')}
           </Typography>
           <TextField
             autoFocus
             margin="dense"
             id="description"
-            label="Problem Description"
+            label={t('userDashboard.alertCard.problemDescription')}
             type="text"
             fullWidth
             multiline
@@ -170,9 +172,9 @@ export default function AlertCard({ alert }) {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenReportDialog(false)}>Cancel</Button>
+          <Button onClick={() => setOpenReportDialog(false)}>{t('userDashboard.alertCard.cancel')}</Button>
           <Button onClick={handleReportSubmit} variant="contained" color="primary">
-            Submit Report
+            {t('userDashboard.alertCard.submitReport')}
           </Button>
         </DialogActions>
       </Dialog>
